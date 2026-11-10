@@ -76,7 +76,7 @@
 
             <div class="form-section">
               <div class="form-section__head">
-                <h3>Coût horaire</h3>
+                <div class="card__title"><h3>Coût horaire</h3><span class="tip tip--start"><button class="info-btn" type="button" aria-expanded="false" aria-controls="tip-hc"><svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/sprite.svg#i-info"></use></svg><span class="visually-hidden">À propos : Coût horaire</span></button><span class="tip__content" id="tip-hc" role="note" hidden><strong>Coût horaire complet</strong>Coût d'une heure facturable : (charges fixes + personnel + rémunération du dirigeant) ÷ heures facturables annuelles. « Suivre le profil » utilise la valeur calculée ; « Personnalisé » la remplace pour ce scénario uniquement.</span></span></div>
                 <span class="nature nature--assumption"><svg class="icon" aria-hidden="true"><use href="assets/icons/sprite.svg#i-lightbulb"></use></svg>Hypothèse</span>
               </div>
               <div class="segmented" role="radiogroup" aria-label="Origine du coût horaire">
@@ -92,7 +92,7 @@
 
             <div class="form-section">
               <div class="form-section__head">
-                <h3>Temps estimé</h3>
+                <div class="card__title"><h3>Temps estimé</h3><span class="tip tip--start"><button class="info-btn" type="button" aria-expanded="false" aria-controls="tip-time"><svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/sprite.svg#i-info"></use></svg><span class="visually-hidden">À propos : Temps estimé</span></button><span class="tip__content" id="tip-time" role="note" hidden><strong>Temps estimé</strong>Heures nécessaires par phase du projet. Le modèle indicatif est un point de départ entièrement modifiable, jamais une référence de marché.</span></span></div>
                 <button class="btn btn--ghost btn--sm" type="button"><svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/sprite.svg#i-file-text"></use></svg>Préremplir avec un modèle indicatif</button>
               </div>
               <table class="line-table">
@@ -109,7 +109,7 @@
             </div>
 
             <div class="form-section">
-              <div class="form-section__head"><h3>Frais directs du projet</h3></div>
+              <div class="form-section__head"><div class="card__title"><h3>Frais directs du projet</h3><span class="tip tip--start"><button class="info-btn" type="button" aria-expanded="false" aria-controls="tip-direct"><svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/sprite.svg#i-info"></use></svg><span class="visually-hidden">À propos : Frais directs</span></button><span class="tip__content" id="tip-direct" role="note" hidden><strong>Frais directs</strong>Dépenses propres à ce projet : licences, thème, sous-traitance… Elles s'ajoutent au coût du temps. Les charges générales non attribuables sont traitées à part, en pourcentage du prix.</span></span></div></div>
               <table class="line-table">
                 <caption class="visually-hidden">Frais directs</caption>
                 <tbody>
@@ -122,7 +122,7 @@
             <div class="form-section">
               <div class="two-col">
                 <div class="field">
-                  <label class="field__label" for="margin">Marge cible sur prix de vente <span class="nature nature--assumption"><svg class="icon" aria-hidden="true"><use href="assets/icons/sprite.svg#i-lightbulb"></use></svg>Hypothèse</span></label>
+                  <div class="field__label"><label for="margin">Marge cible sur prix de vente</label><span class="tip tip--start"><button class="info-btn" type="button" aria-expanded="false" aria-controls="tip-target-margin"><svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/sprite.svg#i-info"></use></svg><span class="visually-hidden">À propos : Marge cible</span></button><span class="tip__content" id="tip-target-margin" role="note" hidden><strong>Marge cible sur prix de vente</strong>Part du prix de vente que vous souhaitez conserver après tous les coûts. Attention : 30 % de marge sur prix ≠ coût × 1,3 (qui ne donne que 23 % de marge).</span></span><span class="nature nature--assumption"><svg class="icon" aria-hidden="true"><use href="assets/icons/sprite.svg#i-lightbulb"></use></svg>Hypothèse</span></div>
                   <div class="input-affix"><input class="input num" id="margin" value="30,00" inputmode="decimal"><span class="input-affix__unit">%</span></div>
                 </div>
                 <div class="field">
@@ -134,7 +134,7 @@
                   <div class="input-affix"><input class="input num" id="price" value="3 200,00" inputmode="decimal"><span class="input-affix__unit">€</span></div>
                 </div>
                 <div class="field">
-                  <span class="field__label">Charges variables générales</span>
+                  <span class="field__label">Charges variables générales<span class="tip tip--start"><button class="info-btn" type="button" aria-expanded="false" aria-controls="tip-cvg"><svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/sprite.svg#i-info"></use></svg><span class="visually-hidden">À propos : Charges variables générales</span></button><span class="tip__content" id="tip-cvg" role="note" hidden><strong>Charges variables générales</strong>Charges proportionnelles au chiffre d'affaires mais non attribuables à un projet (frais bancaires, commissions…). Issues de votre profil, elles sont appliquées en pourcentage du prix.</span></span></span>
                   <p class="num">2,00 % du prix <span class="nature nature--calculated"><svg class="icon" aria-hidden="true"><use href="assets/icons/sprite.svg#i-square-function"></use></svg>Calculé</span></p>
                   <p class="field__help">Issu du profil : exercice 2025, 12 mois.</p>
                 </div>
@@ -145,13 +145,13 @@
 
           <aside class="card sim-results" aria-labelledby="t-results">
             <div class="card__header">
-              <div class="card__title"><h2 id="t-results">Résultats</h2><span class="nature nature--simulated"><svg class="icon" aria-hidden="true"><use href="assets/icons/sprite.svg#i-chart-spline"></use></svg>Simulé</span></div>
+              <div class="card__title"><h2 id="t-results">Résultats</h2><span class="tip tip--start"><button class="info-btn" type="button" aria-expanded="false" aria-controls="tip-results"><svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/sprite.svg#i-info"></use></svg><span class="visually-hidden">À propos : Résultats</span></button><span class="tip__content" id="tip-results" role="note" hidden><strong>Comment ces résultats sont-ils obtenus ?</strong>Ils sont recalculés par le serveur à chaque modification (rien n'est enregistré). Ce brouillon n'a aucun effet sur la stratégie : seule la simulation finalisée sert de référence.</span></span><span class="nature nature--simulated"><svg class="icon" aria-hidden="true"><use href="assets/icons/sprite.svg#i-chart-spline"></use></svg>Simulé</span></div>
               <span class="inline-status inline-status--ok" aria-live="polite"><svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/sprite.svg#i-check"></use></svg>À jour</span>
             </div>
             <div class="result-list">
               <div class="result-line"><span class="result-line__label">Coût direct et de structure</span><span class="result-line__value">2 700,00 €</span></div>
-              <div class="result-line"><span class="result-line__label">Prix plancher <span class="tip"><button class="info-btn" type="button" aria-describedby="tip-floor"><svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/sprite.svg#i-info"></use></svg><span class="visually-hidden">Définition</span></button><span class="tip__content" role="tooltip" id="tip-floor"><strong>Prix plancher</strong>Prix en dessous duquel la prestation fait perdre de l'argent, une fois tous les coûts couverts.</span></span></span><span class="result-line__value">2 755,10 €</span></div>
-              <div class="result-line result-line--key"><span class="result-line__label"><svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/sprite.svg#i-star"></use></svg>Prix recommandé</span><span class="result-line__value">3 970,59 €</span></div>
+              <div class="result-line"><span class="result-line__label">Prix plancher <span class="tip"><button class="info-btn" type="button" aria-expanded="false" aria-controls="tip-floor"><svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/sprite.svg#i-info"></use></svg><span class="visually-hidden">Définition</span></button><span class="tip__content" role="note" id="tip-floor" hidden><strong>Prix plancher</strong>Prix en dessous duquel la prestation fait perdre de l'argent, une fois tous les coûts couverts.</span></span></span><span class="result-line__value">2 755,10 €</span></div>
+              <div class="result-line result-line--key"><span class="result-line__label"><svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/sprite.svg#i-star"></use></svg>Prix recommandé<span class="tip tip--start"><button class="info-btn" type="button" aria-expanded="false" aria-controls="tip-reco"><svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/sprite.svg#i-info"></use></svg><span class="visually-hidden">À propos : Prix recommandé</span></button><span class="tip__content" id="tip-reco" role="note" hidden><strong>Prix recommandé</strong>Le prix qui atteint exactement votre marge cible : coût direct et de structure ÷ (1 − marge cible − taux de charges variables générales).</span></span></span><span class="result-line__value">3 970,59 €</span></div>
               <p class="text-small text-tertiary">Arrondi commercial proposé : <span class="num">3 980 €</span></p>
             </div>
             <hr class="divider">
@@ -160,8 +160,8 @@
               <div class="result-list">
                 <div class="result-line"><span class="result-line__label">Coût de revient complet</span><span class="result-line__value">2 764,00 €</span></div>
                 <div class="result-line"><span class="result-line__label">Résultat</span><span class="result-line__value">436,00 €</span></div>
-                <div class="result-line"><span class="result-line__label">Marge sur prix de vente <span class="tip"><button class="info-btn" type="button" aria-describedby="tip-margin"><svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/sprite.svg#i-info"></use></svg><span class="visually-hidden">Définition</span></button><span class="tip__content" role="tooltip" id="tip-margin"><strong>Marge sur prix de vente</strong>Résultat ÷ prix de vente. À ne pas confondre avec la majoration sur coût.</span></span></span><span class="result-line__value">13,6 %</span></div>
-                <div class="result-line"><span class="result-line__label">Majoration sur coût <span class="tip"><button class="info-btn" type="button" aria-describedby="tip-markup"><svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/sprite.svg#i-info"></use></svg><span class="visually-hidden">Définition</span></button><span class="tip__content" role="tooltip" id="tip-markup"><strong>Majoration sur coût</strong>Résultat ÷ coût de revient. Une majoration de 50 % donne une marge sur prix de vente de 33,3 %.</span></span></span><span class="result-line__value">15,8 %</span></div>
+                <div class="result-line"><span class="result-line__label">Marge sur prix de vente <span class="tip"><button class="info-btn" type="button" aria-expanded="false" aria-controls="tip-margin"><svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/sprite.svg#i-info"></use></svg><span class="visually-hidden">Définition</span></button><span class="tip__content" role="note" id="tip-margin" hidden><strong>Marge sur prix de vente</strong>Résultat ÷ prix de vente. À ne pas confondre avec la majoration sur coût.</span></span></span><span class="result-line__value">13,6 %</span></div>
+                <div class="result-line"><span class="result-line__label">Majoration sur coût <span class="tip"><button class="info-btn" type="button" aria-expanded="false" aria-controls="tip-markup"><svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/sprite.svg#i-info"></use></svg><span class="visually-hidden">Définition</span></button><span class="tip__content" role="note" id="tip-markup" hidden><strong>Majoration sur coût</strong>Résultat ÷ coût de revient. Une majoration de 50 % donne une marge sur prix de vente de 33,3 %.</span></span></span><span class="result-line__value">15,8 %</span></div>
               </div>
             </div>
             <div class="alert alert--warning" role="status">

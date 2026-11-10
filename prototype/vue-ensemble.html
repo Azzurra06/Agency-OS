@@ -59,8 +59,8 @@
             <div class="kpi__top">
               <h2 class="kpi__label">Résultat estimé</h2>
               <span class="tip">
-                <button class="info-btn" type="button" aria-describedby="tip-result"><svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/sprite.svg#i-info"></use></svg><span class="visually-hidden">Comment est-ce calculé ?</span></button>
-                <span class="tip__content" role="tooltip" id="tip-result"><strong>Résultat estimé</strong>CA − charges fixes − personnel − rémunération du dirigeant − charges variables. Hors impôts, TVA et éléments exceptionnels. Estimation de gestion, elle ne remplace pas votre bilan.</span>
+                <button class="info-btn" type="button" aria-expanded="false" aria-controls="tip-result"><svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/sprite.svg#i-info"></use></svg><span class="visually-hidden">Comment est-ce calculé ?</span></button>
+                <span class="tip__content" role="note" id="tip-result" hidden><strong>Résultat estimé</strong>CA − charges fixes − personnel − rémunération du dirigeant − charges variables. Hors impôts, TVA et éléments exceptionnels. Estimation de gestion, elle ne remplace pas votre bilan.</span>
               </span>
             </div>
             <p class="kpi__value">24 400<span class="kpi__unit">€</span></p>
@@ -72,7 +72,7 @@
 
           <article class="card kpi">
             <div class="kpi__top">
-              <h2 class="kpi__label">Maturité business</h2>
+              <div class="card__title"><h2 class="kpi__label">Maturité business</h2><span class="tip tip--start"><button class="info-btn" type="button" aria-expanded="false" aria-controls="tip-maturity"><svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/sprite.svg#i-info"></use></svg><span class="visually-hidden">À propos : Maturité business</span></button><span class="tip__content" id="tip-maturity" role="note" hidden><strong>Maturité business</strong>Score sur 100 issu de votre dernier diagnostic terminé, figé à sa date. Moyenne des 6 dimensions à poids égaux, affichée uniquement si les 6 dimensions sont calculables. Autoévaluation indicative.</span></span></div>
               <span class="nature nature--frozen"><svg class="icon" aria-hidden="true"><use href="assets/icons/sprite.svg#i-lock"></use></svg>Figé · 02/10/2026</span>
             </div>
             <div class="maturity">
@@ -87,7 +87,7 @@
 
           <article class="card kpi">
             <div class="kpi__top">
-              <h2 class="kpi__label">MRR contractualisé</h2>
+              <div class="card__title"><h2 class="kpi__label">MRR contractualisé</h2><span class="tip tip--start"><button class="info-btn" type="button" aria-expanded="false" aria-controls="tip-mrr"><svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/sprite.svg#i-info"></use></svg><span class="visually-hidden">À propos : MRR contractualisé</span></button><span class="tip__content" id="tip-mrr" role="note" hidden><strong>MRR contractualisé</strong>Revenu mensuel des contrats récurrents réellement signés : prix mensuel × contrats actifs (un prix annuel est divisé par 12). Les scénarios simulés ne sont jamais ajoutés à ce montant.</span></span></div>
               <span class="nature nature--calculated"><svg class="icon" aria-hidden="true"><use href="assets/icons/sprite.svg#i-square-function"></use></svg>Calculé</span>
             </div>
             <p class="kpi__value">2 300<span class="kpi__unit">€/mois</span></p>
@@ -102,7 +102,7 @@
           <div class="target">
             <div class="stack stack--sm">
               <div class="cluster cluster--between">
-                <h2 id="t-target">Objectif de CA 2026</h2>
+                <div class="card__title"><h2 id="t-target">Objectif de CA 2026</h2><span class="tip tip--start"><button class="info-btn" type="button" aria-expanded="false" aria-controls="tip-target"><svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/sprite.svg#i-info"></use></svg><span class="visually-hidden">À propos : Objectif de CA</span></button><span class="tip__content" id="tip-target" role="note" hidden><strong>Objectif de chiffre d'affaires</strong>Votre objectif déclaré, comparé au CA de la période de référence (exercice clos 2025, 12 mois). L'écart montre le chemin restant : ce n'est pas une prévision.</span></span></div>
                 <span class="nature nature--declared"><svg class="icon" aria-hidden="true"><use href="assets/icons/sprite.svg#i-pencil"></use></svg>Déclaré</span>
               </div>
               <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="72" aria-label="CA de référence par rapport à l'objectif : 72 %"><span class="progress__bar" data-value="72"></span></div>
@@ -118,7 +118,7 @@
         <div class="dash-grid">
           <section class="card" aria-labelledby="t-prio">
             <div class="card__header">
-              <h2 id="t-prio">Priorités</h2>
+              <div class="card__title"><h2 id="t-prio">Priorités</h2><span class="tip tip--start"><button class="info-btn" type="button" aria-expanded="false" aria-controls="tip-prio"><svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/sprite.svg#i-info"></use></svg><span class="visually-hidden">À propos : Priorités</span></button><span class="tip__content" id="tip-prio" role="note" hidden><strong>D'où viennent ces priorités ?</strong>Des règles métier analysent vos données (profil, diagnostic, simulations finalisées, offres). Chaque recommandation indique les données sur lesquelles elle repose et signale si elles sont incomplètes ou anciennes. Les brouillons ne sont jamais pris en compte.</span></span></div>
               <a class="btn btn--ghost btn--sm" href="#">Voir la stratégie<svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/sprite.svg#i-chevron-right"></use></svg></a>
             </div>
             <article class="reco">
@@ -148,7 +148,7 @@
 
           <section class="card" aria-labelledby="t-plan">
             <div class="card__header">
-              <h2 id="t-plan">Plan d'action</h2>
+              <div class="card__title"><h2 id="t-plan">Plan d'action</h2><span class="tip tip--end"><button class="info-btn" type="button" aria-expanded="false" aria-controls="tip-plan"><svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/sprite.svg#i-info"></use></svg><span class="visually-hidden">À propos : Plan d'action</span></button><span class="tip__content" id="tip-plan" role="note" hidden><strong>Plan d'action</strong>Les recommandations que vous avez acceptées, avec leurs échéances et sous-actions. Progression = actions terminées ÷ actions du plan.</span></span></div>
               <span class="num text-secondary">3 / 7</span>
             </div>
             <div class="stack">
@@ -173,7 +173,7 @@
 
         <section class="card" aria-labelledby="t-evo">
           <div class="card__header">
-            <div class="card__title"><h2 id="t-evo">Évolution du MRR contractualisé</h2><span class="nature nature--demo"><svg class="icon" aria-hidden="true"><use href="assets/icons/sprite.svg#i-flag"></use></svg>Démo</span></div>
+            <div class="card__title"><h2 id="t-evo">Évolution du MRR contractualisé</h2><span class="tip tip--start"><button class="info-btn" type="button" aria-expanded="false" aria-controls="tip-evo"><svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/sprite.svg#i-info"></use></svg><span class="visually-hidden">À propos : Évolution</span></button><span class="tip__content" id="tip-evo" role="note" hidden><strong>Comment l'historique est-il construit ?</strong>Un instantané des indicateurs est enregistré chaque jour à 02:15 (heure de Paris). Un jour sans instantané reste vide sur le graphique : aucune valeur n'est inventée ni interpolée.</span></span><span class="nature nature--demo"><svg class="icon" aria-hidden="true"><use href="assets/icons/sprite.svg#i-flag"></use></svg>Démo</span></div>
             <button class="btn btn--ghost btn--sm" type="button" data-show-table="table-mrr" aria-expanded="false" aria-controls="table-mrr">Voir les données</button>
           </div>
           <div class="chart-box"><canvas id="chart-mrr" role="img" aria-label="MRR contractualisé sur 30 jours : de 1 900 € à 2 300 € ; aucune donnée le 31 octobre."></canvas></div>

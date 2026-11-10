@@ -24,6 +24,45 @@ document.querySelectorAll('[data-toggle-group]').forEach((group) => {
   });
 });
 
+/* Bulles d'information cliquables : clic ou toucher, Entrée/Espace, Échap, clic extérieur. */
+const tipButtons = [...document.querySelectorAll('.tip .info-btn[aria-controls]')];
+const closeTip = (button, restoreFocus = false) => {
+  button.setAttribute('aria-expanded', 'false');
+  document.getElementById(button.getAttribute('aria-controls')).hidden = true;
+  if (restoreFocus) button.focus();
+};
+const openTip = (button) => {
+  tipButtons.forEach((other) => other !== button && closeTip(other));
+  const content = document.getElementById(button.getAttribute('aria-controls'));
+  content.hidden = false;
+  button.setAttribute('aria-expanded', 'true');
+  // Garder la bulle entièrement dans l'écran (marge de 8 px) : décalage horizontal via CSSOM.
+  content.style.setProperty('--tip-shift', '0px');
+  const rect = content.getBoundingClientRect();
+  const margin = 8;
+  let shift = 0;
+  if (rect.right > window.innerWidth - margin) shift = window.innerWidth - margin - rect.right;
+  if (rect.left + shift < margin) shift = margin - rect.left;
+  content.style.setProperty('--tip-shift', `${Math.round(shift)}px`);
+};
+tipButtons.forEach((button) => {
+  button.addEventListener('click', (event) => {
+    event.stopPropagation();
+    if (button.getAttribute('aria-expanded') === 'true') closeTip(button); else openTip(button);
+  });
+});
+document.addEventListener('click', (event) => {
+  tipButtons.forEach((button) => {
+    const content = document.getElementById(button.getAttribute('aria-controls'));
+    if (!content.contains(event.target)) closeTip(button);
+  });
+});
+document.addEventListener('keydown', (event) => {
+  if (event.key !== 'Escape') return;
+  const open = tipButtons.find((button) => button.getAttribute('aria-expanded') === 'true');
+  if (open) closeTip(open, true);
+});
+
 /* Alternative accessible des graphiques : « Voir les données ». */
 document.querySelectorAll('[data-show-table]').forEach((button) => {
   const target = document.getElementById(button.dataset.showTable);

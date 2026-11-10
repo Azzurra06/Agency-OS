@@ -14,7 +14,13 @@
 
 1. **Une question par écran.** Chaque écran répond à une question de dirigeant : « Où en suis-je ? » (Vue d'ensemble), « Mes prix couvrent-ils mes coûts ? » (Pricing), « Mon récurrent est-il rentable ? », « Que faire en priorité ? » (Stratégie).
 2. **Hiérarchie visuelle en trois niveaux** : un indicateur principal, 3 ou 4 indicateurs secondaires, puis le détail à la demande. Pas plus de **6 cartes KPI** visibles sur un écran.
-3. **La pédagogie est intégrée.** Chaque indicateur a une icône (i) qui ouvre sa définition, sa formule lisible et sa source. Pas de glossaire séparé à aller chercher.
+3. **La pédagogie est intégrée.** Chaque section importante et chaque indicateur ont une **bulle d'information cliquable** (i), placée à côté de leur titre. Elle donne la définition, la formule lisible et la source. Pas de glossaire séparé à aller chercher. Emplacements minimum :
+   - **Vue d'ensemble** : résultat estimé, maturité, MRR contractualisé, objectif, priorités, plan d'action, évolution ;
+   - **Pricing** : coût horaire, temps estimé, frais directs, marge cible, charges variables générales, résultats, prix plancher, prix recommandé, marge sur prix de vente, majoration sur coût ;
+   - **Diagnostic** : chaque dimension ;
+   - **Revenus récurrents** : MRR, ARR, couverture, churn, capacité ;
+   - **Stratégie** : priorité, « Repose sur », qualité des données ;
+   - **Paramètres financiers** : chaque champ dont le sens n'est pas évident (coûts de personnel, rémunération du dirigeant, charges variables, facturabilité).
 4. **On voit toujours d'où vient un chiffre** : badge de nature (déclaré, hypothèse, simulé, calculé, figé) et, pour les recommandations, la ligne « Repose sur ».
 5. **Jamais de 0 trompeur.** Une donnée absente produit un **état vide explicatif** avec une action (« Renseignez vos charges pour calculer le résultat »).
 6. **Des formulaires courts et progressifs** : 5 à 7 champs par étape, valeurs par défaut explicites (badge « Hypothèse »), champs avancés repliés.
@@ -147,7 +153,7 @@ Chaque composant est un **module JavaScript** (`assets/js/ui/*.js`) qui crée de
 | **RadioCard** | grande carte cliquable (réponses du diagnostic, choix d'une prestation) | sélectionnée, focus, désactivée |
 | **Badge** | neutre, statut, priorité | — |
 | **NatureBadge** | déclaré, hypothèse, simulé, calculé, figé, démo ; option « avec hypothèses » qui ouvre la liste au clic | — |
-| **Tooltip** et **Popover** | définition d'un indicateur, formule, source | ouverture au survol, au focus et au clic (tactile), fermeture avec Échap |
+| **InfoBubble** (bulle d'information cliquable, décision du 10/11/2026) | petit bouton (i) **placé à côté du titre** de chaque section importante, de chaque indicateur et des champs financiers clés ; il ouvre une bulle avec un titre, une définition en une ou deux phrases et, si utile, la formule en langage clair | ouverture **au clic, au toucher ou au clavier** (Entrée ou Espace), **pas au survol** (inutilisable sur mobile) ; fermeture par Échap (le focus revient au bouton), par un clic à l'extérieur ou par un second clic ; **une seule bulle ouverte à la fois** ; recalage automatique pour rester dans l'écran (8 px de marge) ; `aria-expanded` et `aria-controls` ; libellé accessible « À propos : *titre de la section* » |
 
 ### 3.2 Données et pilotage
 
@@ -390,3 +396,4 @@ Agence · Finances (avec **Historique des modifications**) · Prestations · Com
 | 5 | Récurrent | Séparation stricte entre « Réel » et « Prévisionnel » |
 | 6 | Mode sombre | Hors MVP |
 | 7 | Prototype statique | **Réalisé** : [`prototype/`](../prototype/README.md) |
+| 8 | Bulles d'information | **Cliquables**, à côté des titres des sections importantes (§1, principe 3 ; §3.1, InfoBubble) |

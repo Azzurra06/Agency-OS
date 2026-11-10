@@ -107,11 +107,21 @@
 .info-btn { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 0; border-radius: 50%; background: transparent; color: var(--color-text-tertiary); cursor: pointer; }
 .info-btn:hover { background: var(--color-surface-muted); color: var(--color-text); }
 
-/* ---------- Infobulle (CSS, survol ou focus) ---------- */
-.tip { position: relative; display: inline-flex; }
-.tip__content { position: absolute; z-index: 20; top: calc(100% + 6px); right: 0; width: 260px; padding: var(--space-3); background: var(--color-text); color: var(--color-text-inverse); border-radius: var(--radius-md); box-shadow: var(--shadow-2); font-size: var(--text-small); line-height: var(--lh-small); opacity: 0; visibility: hidden; transition: opacity var(--duration-fast) var(--ease-out); }
-.tip:hover .tip__content, .tip:focus-within .tip__content { opacity: 1; visibility: visible; }
-.tip__content strong { display: block; margin-bottom: 2px; }
+/* ---------- Bulle d'information cliquable (toggletip) ---------- */
+.tip { position: relative; display: inline-flex; vertical-align: middle; }
+.tip .info-btn[aria-expanded="true"] { background: var(--color-accent-subtle); color: var(--color-accent-text); }
+.tip__content {
+  position: absolute; z-index: 30; top: calc(100% + 6px); left: 0;
+  width: max-content; max-width: min(300px, calc(100vw - 32px));
+  padding: var(--space-3) var(--space-4); background: var(--color-text); color: var(--color-text-inverse);
+  border-radius: var(--radius-md); box-shadow: var(--shadow-2);
+  font-family: var(--font-body); font-size: var(--text-small); line-height: var(--lh-small); font-weight: 400;
+  text-align: left; text-transform: none; letter-spacing: normal; white-space: normal;
+  transform: translateX(var(--tip-shift, 0px));
+}
+.tip__content[hidden] { display: none; }
+.tip--end .tip__content { left: auto; right: 0; }
+.tip__content strong { display: block; margin-bottom: var(--space-1); font-weight: 600; }
 
 /* ---------- Alertes et bandeaux ---------- */
 .alert { display: flex; gap: var(--space-3); padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); border: 1px solid; font-size: var(--text-small); }
