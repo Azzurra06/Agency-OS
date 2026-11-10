@@ -9,7 +9,8 @@ SaaS de pilotage stratégique et financier pour petites agences web et digitales
 | Phase | Document | Statut |
 |---|---|---|
 | 1 — Cadrage fonctionnel | [docs/01-cadrage.md](docs/01-cadrage.md) | Validé |
-| 2 — Architecture | [docs/02-architecture.md](docs/02-architecture.md) · [docs/03-formules-et-scoring.md](docs/03-formules-et-scoring.md) | Validé avec ajustements (3 questions ouvertes) |
+| 2 — Architecture | [docs/02-architecture.md](docs/02-architecture.md) · [docs/03-formules-et-scoring.md](docs/03-formules-et-scoring.md) | Validé (questions Q1 à Q4 tranchées) |
+| Architecture détaillée | [docs/05-architecture-detaillee.md](docs/05-architecture-detaillee.md) | En attente de validation |
 | Sécurité et confidentialité (transverse) | [docs/04-securite.md](docs/04-securite.md) | En attente de validation (11 arbitrages) |
 | 3 — UX/UI | — | À venir |
 | 4 — Développement | — | À venir |

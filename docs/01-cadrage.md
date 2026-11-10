@@ -1,6 +1,6 @@
 # Agency OS — Phase 1 : Cadrage fonctionnel
 
-> Statut : **validé le 10/11/2026**. Les décisions des §10 (phase 1) et §11 (phase 2) **priment** sur les propositions des §4 à §9 en cas de divergence.
+> Statut : **validé le 10/11/2026**. Les décisions des §10 (phase 1), §11 et §12 (phase 2) **priment** sur les propositions des §4 à §9 en cas de divergence.
 > Périmètre de ce document : vision, parcours, périmètre du MVP, dépendances entre modules, ambiguïtés et arborescence.
 > Aucun code n'est produit à ce stade. L'architecture technique détaillée (schéma SQL, endpoints, services) fera l'objet de la phase 2.
 
@@ -552,11 +552,28 @@ Ces décisions **remplacent** les propositions correspondantes du §6 en cas de 
 | C9 | §5.2, ligne « Prix recommandé d'une prestation » : « scénario de référence de la simulation » | Il faut préciser **quelle version**. | Le scénario de référence de la **dernière version finalisée**. |
 | C10 | §3 P4 (projection récurrente) et §5.2 « MRR simulé » | A2 parle de « simulations finalisées » sans préciser s'il s'agit aussi des **scénarios récurrents**. | Par cohérence, le même cycle brouillon, finalisée, remplacée est appliqué aux scénarios récurrents. Les **offres** et leurs **contrats** restent des données vivantes (le MRR contractualisé est recalculé à la lecture). ⚠️ **Q3** |
 
-### 11.3 Questions ouvertes
+### 11.3 Questions (tranchées en §12)
 
 | # | Question | Proposition |
 |---|---|---|
-| Q1 | Les règles de prix doivent-elles lire **uniquement les simulations finalisées** ? | Oui. Cela donne des recommandations stables et une intention explicite. En contrepartie, sans finalisation il n'y a pas de recommandation de prix, et `NO_PRICING` invite à finaliser. |
-| Q2 | Seuils de calculabilité du diagnostic : au moins 3 réponses exploitables **et** au moins 60 % par dimension ; score global seulement si les **6** dimensions sont calculables ? | Oui. Avec des poids égaux, un global calculé sur 5 dimensions ne serait pas comparable à un global calculé sur 6. |
-| Q3 | Appliquer la finalisation aux **scénarios récurrents** ? | Oui, avec le même modèle que le pricing, pour un seul concept à apprendre dans l'interface. |
-| Q4 | Heure du cron quotidien | 02:15 (heure de Paris), en dehors des heures d'usage. |
+| Q1 ✅ | Les règles de prix doivent-elles lire **uniquement les simulations finalisées** ? | Oui. Cela donne des recommandations stables et une intention explicite. En contrepartie, sans finalisation il n'y a pas de recommandation de prix, et `NO_PRICING` invite à finaliser. |
+| Q2 ✅ | Seuils de calculabilité du diagnostic : au moins 3 réponses exploitables **et** au moins 60 % par dimension ; score global seulement si les **6** dimensions sont calculables ? | Oui. Avec des poids égaux, un global calculé sur 5 dimensions ne serait pas comparable à un global calculé sur 6. |
+| Q3 ✅ | Appliquer la finalisation aux **scénarios récurrents** ? | Oui, avec le même modèle que le pricing, pour un seul concept à apprendre dans l'interface. |
+| Q4 ✅ | Heure du cron quotidien | 02:15 (heure de Paris), en dehors des heures d'usage. |
+
+---
+
+## 12. Décisions complémentaires (10/11/2026)
+
+Les résolutions **C1 à C10 sont validées**.
+
+| # | Sujet | Décision |
+|---|---|---|
+| Q1 | Pricing : brouillon ou finalisé | Les recommandations stratégiques globales n'utilisent **que** les simulations **finalisées et actives**. La référence est la **dernière simulation finalisée active de chaque prestation**, et non la dernière de l'agence. Les brouillons affichent instantanément leurs calculs, résultats et **alertes locales** dans le simulateur, **sans** modifier la stratégie globale. Une simulation finalisée est **immuable** : toute modification passe par une duplication ou une nouvelle version. Les versions remplacées restent **consultables**. |
+| Q2 | Diagnostic : résultats partiels | Une dimension est calculable avec au moins 3 réponses exploitables **et** au moins 60 % de ses questions exploitables. Le score global sur 100 n'est affiché que si les 6 dimensions sont calculables. Sinon, le statut est **« Diagnostic partiel »** : scores disponibles et informations manquantes. Les recommandations peuvent utiliser les dimensions calculables, **sans présenter le résultat comme complet**. « Je ne sais pas » n'est exploitable que si la question le déclare **explicitement évaluable** ; sinon, c'est une réponse **inconnue**. |
+| Q3 | Scénarios récurrents | Cycle **brouillon, finalisé, remplacé**. Les scénarios finalisés conservent leurs hypothèses et leurs résultats, avec une action **« Dupliquer pour modifier »**. Séparation stricte entre **scénarios prévisionnels** et **offres et contrats réels**, qui restent modifiables. Une modification de contrat **ne modifie jamais rétroactivement** un scénario finalisé. |
+| Q4 | Cron des instantanés | Instantané quotidien à **02:15, heure de Paris**, selon les possibilités réelles de Hostinger (fuseau du serveur non garanti : le déclenchement est géré par l'application, voir 05 §4). Le processus est **idempotent**, **journalise ses échecs** et **évite les doublons**. Un jour sans instantané reste identifiable comme **donnée manquante**, sans aucune interpolation présentée comme réelle. |
+| N1 | Nature des données | Dans tous les modules, on distingue clairement : **données réelles déclarées**, **hypothèses et simulations**, **résultats calculés** et **versions historiques figées**. Modèle commun décrit en 05 §1. |
+| N2 | Traçabilité des recommandations | Chaque recommandation indique **les données sur lesquelles elle repose** (source, nature, date, version) et signale les données **incomplètes** ou **anciennes** (05 §2). |
+
+Les arbitrages de sécurité **D1 à D11** ([04-securite.md §13](04-securite.md)) restent **en attente de validation**.

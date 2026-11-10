@@ -1,6 +1,6 @@
 # Agency OS — Formules financières, scoring et règles
 
-> Statut : **validé avec ajustements le 10/11/2026** (livrable de la phase 2). Les points ouverts sont marqués ⚠️ et listés dans [01-cadrage.md §11](01-cadrage.md).
+> Statut : **validé avec ajustements le 10/11/2026** (livrable de la phase 2). Décisions consolidées dans [01-cadrage.md §11 et §12](01-cadrage.md).
 > Ce document est la **spécification de référence** des calculs. Le code PHP (`app/Domain/*`) doit s'y conformer, et chaque cas chiffré ci-dessous deviendra un test automatisé (`tests/fixtures/*.json`).
 > Tous les montants sont **HT, en euros**.
 
@@ -217,8 +217,11 @@ L'arrondi commercial (réglage `price_rounding`) est proposé **à côté** de `
 | Coût horaire, `tv`, prix actuel | lus en direct dans le profil et le catalogue | **figés** dans `frozen_context` |
 | Résultats | recalculés à chaque lecture | **figés** dans `frozen_results` (arrondis à l'échelle de sortie) |
 | Modification | libre | interdite (409) ; « Nouvelle version » crée un brouillon |
-| Utilisée par les règles | non | oui : la **dernière version finalisée** de chaque prestation, scénario de référence (⚠️ Q1) |
+| Utilisée par les règles | **non**. Ses calculs, résultats et alertes locales (« sous le prix plancher », « marge inférieure à la cible ») s'affichent instantanément dans le simulateur, sans effet sur la stratégie globale | oui, **uniquement** la simulation finalisée **active** de la prestation (scénario de référence) |
 | Dérive | — | indicateur, calculé à la lecture, si le coût horaire ou `tv` courants diffèrent des valeurs figées |
+| Consultation | — | toujours possible, y compris pour les versions remplacées ou archivées |
+
+**Simulation active d'une prestation** : pour chaque prestation, une seule simulation finalisée est **active**, la plus récemment finalisée. Finaliser une simulation pour une prestation fait passer l'éventuelle simulation active précédente de **cette prestation** en `superseded` (`superseded_by` renseigné). Les autres prestations ne sont pas concernées. Une simulation « sur mesure » (sans prestation du catalogue) n'est jamais utilisée par les règles de prix. L'utilisateur peut **archiver** une simulation finalisée : elle reste consultable, mais n'est plus active.
 
 ---
 
@@ -291,22 +294,22 @@ Cumul sur 6 mois : **14 095,14 €**. Cumul sur 12 mois : **35 857,68 €**.
 
 ### 6.2 « Je ne sais pas » : une politique par question
 
-Chaque question déclare, dans la version du questionnaire, une politique `unknown_policy` :
+Chaque question déclare, dans la version du questionnaire, une politique `unknown_policy`. **Par défaut, « Je ne sais pas » est une réponse inconnue, non exploitable.** Elle ne devient évaluable que si la question le déclare explicitement :
 
 | Politique | Signification | Effet sur le calcul | Quand l'utiliser |
 |---|---|---|---|
-| `penalize` | ne pas savoir **est** un manque de maturité | compte au niveau 0 et entre dans le calcul | la question porte sur une donnée ou une pratique que le dirigeant devrait maîtriser (« Connaissez-vous votre coût horaire ? », « Suivez-vous la rentabilité par projet ? ») |
-| `exclude` | réponse inconnue, sans jugement | retirée du calcul ; elle réduit la fiabilité | l'information peut légitimement être inconnue ou difficile à estimer (« Taux de renouvellement de vos contrats », « Part des leads issus du bouche-à-oreille ») |
+| `evaluable` (doit être **déclarée explicitement** dans le questionnaire) | ne pas savoir **est** un manque de maturité | compte au niveau 0 et entre dans le calcul | la question porte sur une donnée ou une pratique que le dirigeant devrait maîtriser (« Connaissez-vous votre coût horaire ? », « Suivez-vous la rentabilité par projet ? ») |
+| `unknown` (**valeur par défaut**) | réponse inconnue, sans jugement | retirée du calcul ; elle réduit la fiabilité | l'information peut légitimement être inconnue ou difficile à estimer (« Taux de renouvellement de vos contrats », « Part des leads issus du bouche-à-oreille ») |
 
-L'interface explique la politique au moment de la réponse. Pour une question `penalize`, une note précise : « Si vous ne le savez pas, c'est un axe de progrès : la réponse est comptée comme pratique absente. » La politique de chaque question figure aussi sur `/methodologie`.
+L'interface explique la politique au moment de la réponse. Pour une question `evaluable`, une note précise : « Si vous ne le savez pas, c'est un axe de progrès : la réponse est comptée comme pratique absente. » La politique de chaque question figure aussi sur `/methodologie`.
 
 ### 6.3 Calcul, seuils et fiabilité
 
 ```
 Par dimension :
   A   = questions applicables (conditions remplies)
-  Ue  = réponses « Je ne sais pas » sur des questions `exclude`
-  Up  = réponses « Je ne sais pas » sur des questions `penalize` (niveau 0)
+  Ue  = réponses « Je ne sais pas » sur des questions `unknown`
+  Up  = réponses « Je ne sais pas » sur des questions `evaluable` (niveau 0)
   n   = A − Ue                                   questions entrant dans le calcul
   Sd  = 100 × Σ niveaux (n questions) ÷ (3 × n)
   Fiabilité Fd = n ÷ A
@@ -325,7 +328,11 @@ Clôture du diagnostic  possible seulement si toutes les questions applicables o
 
 Le nombre de réponses `Up` (comptées comme pratique absente) est également affiché.
 
-**Si une dimension n'est pas calculable**, elle est affichée « Données insuffisantes » et absente du radar (l'axe est grisé). **Le score global n'est alors pas affiché** : « Score global non disponible : 1 dimension manque de réponses exploitables. » Les scores des autres dimensions restent visibles. ⚠️ Seuils à confirmer (Q2).
+**Diagnostic partiel.** Si au moins une dimension n'est pas calculable, le diagnostic terminé porte le statut **« Diagnostic partiel »** :
+- les scores des dimensions calculables sont affichés ; les autres apparaissent « Données insuffisantes », avec la liste des questions restées inconnues et un bouton « Compléter ces réponses » (qui crée un nouveau diagnostic prérempli) ;
+- **le score global n'est pas affiché** : « Score global disponible lorsque les 6 dimensions sont renseignées » ;
+- le radar grise les axes non calculables, sans les placer à 0 ;
+- les recommandations **peuvent** s'appuyer sur les dimensions calculables, avec la mention « Fondée sur un diagnostic partiel ». Elles ne présentent jamais un résultat global.
 
 Affichage : entier. Stockage : 2 décimales. Arrondi selon §0.1.
 
@@ -355,9 +362,9 @@ Affichage : entier. Stockage : 2 décimales. Arrondi selon §0.1.
 → Aucune réponse inconnue, fiabilité 1,00. Score global **58,06**, affiché **58 / 100**, niveau « En construction », fiabilité élevée. Forces : D5, D4. Axes d'amélioration : D6, D3.
 
 **Cas DIAG-2** (« Je ne sais pas »)
-- D2, 5 questions applicables. Réponses : 3, 2, *inconnu (exclude)*, 2, *inconnu (penalize)* → `n` = 4, niveaux 3 + 2 + 2 + 0 = 7 → `Sd` = 100 × 7 ÷ 12 = **58,33** ; `Fd` = 0,80 → calculable.
-- D6, 5 questions applicables, dont 3 inconnues `exclude` → `n` = 2 < 3 → **non calculable**.
-- Conséquence : D2 est affichée (58), D6 apparaît comme « Données insuffisantes », et le **score global n'est pas affiché**. La règle `DIM_LOW_D6` ne se déclenche pas ; `DIAG_LOW_RELIABILITY` se déclenche (§7.2).
+- D2, 5 questions applicables. Réponses : 3, 2, *inconnu (`unknown`)*, 2, *inconnu (`evaluable`)* → `n` = 4, niveaux 3 + 2 + 2 + 0 = 7 → `Sd` = 100 × 7 ÷ 12 = **58,33** ; `Fd` = 0,80 → calculable.
+- D6, 5 questions applicables, dont 3 inconnues `unknown` → `n` = 2 < 3 → **non calculable**.
+- Conséquence : D2 est affichée (58), D6 apparaît comme « Données insuffisantes », et le **score global n'est pas affiché**. Statut **Diagnostic partiel**. La règle `DIM_LOW_D6` ne se déclenche pas. `DIM_LOW_D2` peut se déclencher (D2 est calculable) avec la mention « diagnostic partiel ». `DIAG_LOW_RELIABILITY` se déclenche (§7.2).
 
 ### 6.4 Versions
 

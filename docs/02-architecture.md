@@ -1,6 +1,6 @@
 # Agency OS — Phase 2 : Architecture
 
-> Statut : **validé avec ajustements le 10/11/2026** — voir [01-cadrage.md §11](01-cadrage.md). Les points encore ouverts sont signalés par ⚠️.
+> Statut : **validé avec ajustements le 10/11/2026** — voir [01-cadrage.md §11](01-cadrage.md). Décisions complémentaires dans [01-cadrage.md §12](01-cadrage.md) et architecture détaillée dans [05-architecture-detaillee.md](05-architecture-detaillee.md).
 > Prérequis : [01-cadrage.md](01-cadrage.md) (validé).
 > Les formules financières et le scoring sont documentés à part : [03-formules-et-scoring.md](03-formules-et-scoring.md).
 > Ce document décrit l'architecture ; il ne contient pas encore de code d'implémentation.
@@ -274,7 +274,8 @@ Le journal répond à « qu'est-ce qui a changé, quand et par qui ». Les insta
 | organization_id | FK | INDEX (organization_id, service_id, status) |
 | service_id | FK NULL (`SET NULL`) | |
 | name | VARCHAR(150) | |
-| status | ENUM('draft','finalized','superseded') | `superseded` = remplacée par une version finalisée plus récente |
+| status | ENUM('draft','finalized','superseded','archived') | `finalized` = **active** pour sa prestation ; `superseded` = remplacée (nouvelle version ou autre simulation finalisée pour la même prestation) ; `archived` = retirée par l'utilisateur, consultable |
+| superseded_by | FK NULL | simulation qui l'a remplacée |
 | version_number | SMALLINT | 1, 2, 3… |
 | parent_simulation_id | FK NULL | version dont celle-ci est issue |
 | reference_scenario_id | FK NULL vers pricing_scenarios | obligatoire à la finalisation |
@@ -283,7 +284,7 @@ Le journal répond à « qu'est-ce qui a changé, quand et par qui ». Les insta
 | frozen_context | JSON NULL | hypothèses figées : coût horaire et sa source, `tv`, période de référence, hypothèses du profil (heures, taux de facturabilité), prix actuel et volume de la prestation |
 | notes | TEXT NULL | |
 
-Un brouillon est recalculé à chaque lecture. Une simulation `finalized` ou `superseded` est **en lecture seule** : l'API renvoie 409 à toute modification. « Créer une nouvelle version » duplique la simulation en brouillon (`version_number + 1`). Quand cette nouvelle version est finalisée, la précédente passe en `superseded`. Un **indicateur de dérive**, calculé à la lecture, signale si le coût horaire ou `tv` actuels diffèrent des valeurs figées (« Hypothèses modifiées depuis la validation du 12/11/2026 »).
+Un brouillon est recalculé à chaque lecture. Une simulation `finalized`, `superseded` ou `archived` est **en lecture seule** : l'API renvoie 409 à toute modification. « Créer une nouvelle version » duplique la simulation en brouillon (`version_number + 1`). Quand cette nouvelle version est finalisée, la précédente passe en `superseded`. Un **indicateur de dérive**, calculé à la lecture, signale si le coût horaire ou `tv` actuels diffèrent des valeurs figées (« Hypothèses modifiées depuis la validation du 12/11/2026 »).
 
 **pricing_scenarios**
 | Colonne | Type | Notes |
@@ -331,7 +332,7 @@ Les résultats d'un brouillon ne sont **pas** stockés. Ceux d'une simulation fi
 
 **recurring_offer_items** : `offer_id` (FK cascade), `label`, `position`. Ce sont les prestations incluses.
 
-**recurring_scenarios** : `organization_id`, `name`, `horizon_months` TINYINT (6 ou 12, défaut 12), puis, sur le même modèle que le pricing : `status` ENUM('draft','finalized','superseded'), `version_number`, `parent_scenario_id`, `finalized_at`, `finalized_by`, `calc_version`, `frozen_context` JSON (prix, temps et coûts des formules, coût horaire, `tv`, capacité) et `frozen_results` JSON (séries mensuelles, cumuls). ⚠️ L'extension de la finalisation aux scénarios récurrents est à confirmer (01 §11, Q3).
+**recurring_scenarios** : `organization_id`, `name`, `horizon_months` TINYINT (6 ou 12, défaut 12), puis, sur le même modèle que le pricing : `status` ENUM('draft','finalized','superseded'), `version_number`, `parent_scenario_id`, `finalized_at`, `finalized_by`, `calc_version`, `frozen_context` JSON (prix, temps et coûts des formules, coût horaire, `tv`, capacité) et `frozen_results` JSON (séries mensuelles, cumuls). Les offres et les contrats restent des données réelles modifiables : un scénario finalisé en garde une **copie** figée et n'est jamais modifié rétroactivement. Si une offre est supprimée, le scénario finalisé reste lisible (`offer_id` mis à NULL, données conservées dans `frozen_context`).
 
 **recurring_scenario_offers** : clé primaire (`scenario_id`, `offer_id`), `starting_clients` DECIMAL(8,2), `new_clients_per_month` DECIMAL(6,2), `monthly_churn_rate` DECIMAL(6,4).
 
@@ -359,8 +360,8 @@ Règles de versionnement :
 | is_scorable | TINYINT(1) | |
 | applicable_count | TINYINT | questions applicables |
 | scored_count | TINYINT | questions entrant dans le calcul |
-| unknown_excluded_count | TINYINT | « Je ne sais pas » exclus |
-| unknown_penalized_count | TINYINT | « Je ne sais pas » comptés comme pratique absente |
+| unknown_excluded_count | TINYINT | « Je ne sais pas » inconnus, exclus du calcul |
+| unknown_evaluable_count | TINYINT | « Je ne sais pas » sur des questions déclarées évaluables (niveau 0) |
 | reliability | DECIMAL(5,4) | `scored_count ÷ applicable_count` |
 
 Le diagnostic lui-même porte aussi `calc_version`, en plus de `questionnaire_version`.
@@ -477,7 +478,7 @@ users ─┬─< organization_members >─┬─ organizations ─┬─ organiz
 | | GET `/recurring/summary` | MRR et ARR contractualisés, répartition, couverture comparée à la part déclarée, capacité |
 | | GET · POST `/recurring/scenarios` · GET · PUT · DELETE `/recurring/scenarios/{id}` | |
 | | GET `/recurring/scenarios/{id}/projection` | séries mensuelles (figées si le scénario est finalisé) |
-| | POST `/recurring/scenarios/{id}/finalize` · POST `/recurring/scenarios/{id}/new-version` | ⚠️ selon Q3 |
+| | POST `/recurring/scenarios/{id}/finalize` · POST `/recurring/scenarios/{id}/new-version` | « Dupliquer pour modifier » |
 | **Stratégie** | GET `/recommendations?status=` | |
 | | POST `/recommendations/evaluate` | réévaluation manuelle |
 | | POST `/recommendations/{id}/accept` · `/dismiss` · `/snooze` · `/reopen` | |
@@ -607,7 +608,8 @@ Si une donnée manque, la valeur vaut `null` et `missing[]` indique les champs �
 4. Appliquer les migrations : `php bin/migrate.php` en SSH, ou import manuel des fichiers SQL dans l'ordre via phpMyAdmin si SSH n'est pas disponible.
 5. Créer les tâches cron :
    - toutes les heures : `php …/bin/purge-demo.php` ;
-   - chaque jour à 02:15 : `php …/bin/snapshot-daily.php`, puis `php …/bin/daily-maintenance.php`.
+   - toutes les heures à la minute 15 : `php …/bin/snapshot-daily.php`. Le script ne produit l'instantané qu'**à partir de 02:15, heure de Paris**, une fois par jour (gestion de l'heure d'été, voir 05 §4) ;
+   - `php …/bin/daily-maintenance.php` : même principe.
 6. Vérifier les prérequis PHP. Ce point a déjà été contrôlé sur `agency-os.azzurra-pro.com` : PHP 8.3.36, `bcmath`, `intl`, `mbstring` et `pdo_mysql` sont actifs. Un script `bin/check-requirements.php` refait ce contrôle et l'application refuse de démarrer si BCMath manque.
 7. Durcir la configuration PHP : `expose_php` à Off ; cookies de session `Secure`, `HttpOnly`, `SameSite=Lax` et `use_strict_mode` (aussi forcés par le code à l'exécution).
 8. Activer le SSL (Let's Encrypt) puis HSTS.
