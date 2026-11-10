@@ -1,6 +1,6 @@
 # Agency OS — Architecture de sécurité et de confidentialité
 
-> Statut : **proposition, en attente de validation** (prérequis au développement)
+> Statut : **arbitrages D1 à D11 validés le 10/11/2026**, avec des ajustements (§13). **Aucune modification d'infrastructure n'a été faite** (Hostinger, CDN, extensions PHP, DNS) : les actions prévues sont listées en §16 et attendent ton accord explicite.
 > Principes : *Security by Design* et *Privacy by Design*. Référentiels : **OWASP ASVS 5.0, niveau 2 visé** (chapitres applicables) et **OWASP Top 10** (dernière édition).
 > Ce document complète et **remplace** [02-architecture.md §4](02-architecture.md) une fois validé. Aucune application n'est invulnérable : ce document vise à réduire les risques, à en limiter l'impact et à les rendre détectables.
 
@@ -21,10 +21,12 @@ Vérifications faites le 10/11/2026 via l'API Hostinger sur le compte `u70077005
 | Fonctions désactivées | `exec`, `shell_exec`, `system`, `passthru`, `popen`, `proc_open`… | PHP ne peut pas lancer `mysqldump` ; en revanche, une **tâche cron peut exécuter une commande shell** (§8) |
 | Options PHP par défaut | `display_errors=Off` ✅ ; `expose_php=On` ❌ ; `allow_url_fopen=On` ❌ ; `session.cookie_secure/httponly=Off` ❌ ; `samesite=None` ❌ ; `use_strict_mode=Off` ❌ ; `log_errors=Off` ❌ ; `post_max_size=256M` ❌ | Durcissement **par le code** à l'exécution (les options de session sont modifiables par `ini_set`) **et** dans hPanel (§6.3) |
 | SSL | **Actif**, certificat permanent (`hssl`), **redirection HTTPS activée** | HTTPS obligatoire, déjà en place ; HSTS à ajouter (§5) |
-| CDN Hostinger | **Activé** sur le sous-domaine | ⚠️ Peut masquer l'IP réelle des visiteurs (ce qui fausse la limitation des tentatives et les journaux) et mettre en cache des réponses ; voir **D2** |
+| CDN Hostinger | Réglage **« activé »** dans les paramètres du site, **mais pas dans le chemin effectif** : le DNS de `agency-os` pointe **directement vers le serveur** (A `89.116.147.139`, AAAA `2a02:4780:27:1036:…:12`), alors que `azzurra-pro.com` et `www` passent par `*.cdn.hstgr.net` ; aucun en-tête de CDN dans les réponses | Aujourd'hui, l'IP vue par PHP est celle du visiteur, et aucune mise en cache par le CDN n'a été constatée. Le statut peut toutefois changer si le DNS est modifié : voir **D2** et la surveillance automatique (§12.2) |
 | Cache serveur | Désactivé ✅ | — |
 | Cron | Disponible, aucune tâche configurée | Purge de la démo, instantanés, sauvegardes, alertes |
 | MySQL | **Un seul utilisateur par base**, avec **tous les privilèges** sur sa base (`DROP`, `ALTER`, `TRIGGER`, `EVENT`…) ; 3 Go par base ; accès distant seulement s'il est explicitement autorisé | Moindre privilège limité (**D10**) |
+| En-têtes HTTP observés (site vide, 10/11/2026) | `x-powered-by: PHP/8.3.36` (version exposée) ; `server: LiteSpeed` ; `content-security-policy: upgrade-insecure-requests` **ajouté par Hostinger** ; pas de HSTS | Notre CSP s'ajoutera à celle de Hostinger : le navigateur applique les deux, ce qui reste compatible. `expose_php=Off` supprimera `x-powered-by`. HSTS est à ajouter |
+| Email de `azzurra-pro.com` | SPF `v=spf1 include:_spf.mail.hostinger.com ~all` ✅ ; DKIM Hostinger (`hostingermail-a/b/c._domainkey`) ✅ ; **DMARC `p=none`** sans adresse de rapport ⚠️ ; MX Hostinger ✅ | L'envoi par SMTP Hostinger sera aligné SPF et DKIM. Avec `p=none`, **n'importe qui peut usurper l'adresse de l'expéditeur** sans être rejeté ; il faut durcir progressivement (§16, action A6) |
 
 ### 1.2 Points non vérifiables par l'API, à contrôler dans hPanel avant de figer les choix
 
@@ -35,7 +37,7 @@ Vérifications faites le 10/11/2026 via l'API Hostinger sur le compte `u70077005
 | Privilèges MySQL modifiables, ou deuxième utilisateur possible | hPanel → Bases de données | Moindre privilège |
 | Localisation du centre de données (`srv936`) | hPanel → Hébergement → Détails | RGPD : hébergement dans l'UE |
 | Version de MySQL ou MariaDB | phpMyAdmin | Prise en charge des contraintes `CHECK`, des clés étrangères composites et du JSON |
-| Email du domaine (SPF, DKIM, DMARC) | hPanel → Emails, zone DNS | Délivrabilité des emails de réinitialisation et de vérification |
+| Boîte d'envoi SMTP dédiée (`no-reply@…`) | hPanel → Emails | Le DNS email est vérifié (§1.1). Reste à créer la boîte d'envoi (avec ton accord) et à durcir DMARC |
 | Prise en compte des en-têtes `.htaccess` (`Header`) par LiteSpeed | Test automatique au déploiement (§11) | HSTS, CSP |
 
 ---
@@ -67,7 +69,13 @@ Vérifications faites le 10/11/2026 via l'API Hostinger sur le compte `u70077005
 
 Tous les sites du compte `u700770059` s'exécutent **sous le même utilisateur système**. Les permissions de fichiers (600, 700) protègent contre les **autres clients** de Hostinger, qui sont isolés par CageFS/CloudLinux. Elles ne protègent **pas** contre un autre de tes propres sites qui serait compromis : celui-ci pourrait lire la configuration d'Agency OS, ses clés et sa base.
 
-Aucune mesure applicative ne peut compenser complètement ce risque. Le chiffrement applicatif ne le résout pas non plus, puisque la clé est lisible par le même utilisateur. **Arbitrage D1** (§13).
+Aucune mesure applicative ne peut compenser complètement ce risque. Le chiffrement applicatif ne le résout pas non plus, puisque la clé est lisible par le même utilisateur.
+
+**Décision D1** :
+- sur cet hébergement, **uniquement des données fictives** (portfolio, démo, comptes de test) ;
+- **avant toute collecte de données financières réelles**, trois conditions : un hébergement **suffisamment isolé**, une **revue de sécurité** et une **vérification de la configuration de production réelle**.
+
+Un changement d'hébergement n'est **pas** en soi une garantie : chaque mesure de ce document devra être revérifiée sur le nouvel environnement. Le passage aux données réelles est verrouillé techniquement par le drapeau `APP_REAL_DATA_ALLOWED=false` (§13, D1).
 
 ---
 
@@ -84,8 +92,11 @@ Aucune mesure applicative ne peut compenser complètement ce risque. Le chiffrem
 
 - L'inscription renvoie **toujours** le même message : « Vérifiez votre boîte de réception ».
 - Si l'adresse est déjà utilisée, le titulaire reçoit un email « Vous avez déjà un compte » ; personne d'autre ne l'apprend.
-- Le compte n'est utilisable **qu'après vérification** de l'email : lien à usage unique, valable 24 h (**D9**).
-- Limitation : 5 inscriptions par IP et par heure.
+- **Aucune fonctionnalité privée** n'est accessible avant la vérification de l'email (**D9**). Seules sont autorisées les pages « Vérifiez votre email », « Renvoyer le lien » et « Se déconnecter ».
+- Jeton de vérification : 32 octets aléatoires, **SHA-256 stocké**, valable **24 h**, **usage unique** ; toute nouvelle demande invalide les jetons précédents.
+- **Renvoi limité** : 1 demande toutes les 2 minutes, 5 par jour et par compte, 10 par IP et par heure. La réponse reste générique.
+- Limitation des inscriptions : 5 par IP et par heure.
+- Un compte non vérifié au bout de 7 jours est supprimé automatiquement (minimisation).
 
 ### 3.3 Connexion et limitation des tentatives
 
@@ -248,7 +259,11 @@ L'application vérifie ces valeurs au démarrage en production (`bin/check-requi
 ### 6.4 MySQL et moindre privilège
 
 - **Contrainte constatée** : un seul utilisateur par base, avec tous les privilèges sur cette base. La séparation idéale (un utilisateur limité à `SELECT`/`INSERT`/`UPDATE`/`DELETE` pour l'application, un autre pour les migrations) est à vérifier dans hPanel (**D10**).
-- **Mesures compensatoires** :
+- **Décision D10** :
+  1. vérifier dans hPanel si les privilèges de l'utilisateur peuvent être réduits, ou si un second utilisateur peut être créé (action **A4**, §16) ;
+  2. si oui : un utilisateur applicatif limité à `SELECT`, `INSERT`, `UPDATE`, `DELETE` et `LOCK TABLES` (plus `CREATE TEMPORARY TABLES` si nécessaire), et un utilisateur de migration utilisé uniquement en ligne de commande ;
+  3. sinon : **risque résiduel R4 documenté** (§15).
+- **Mesures compensatoires** (dans tous les cas) :
   - aucune requête DDL dans le code web (le routeur web ne charge jamais le `Migrator`) ;
   - migrations uniquement en ligne de commande, précédées d'une sauvegarde ;
   - base **dédiée** à Agency OS, sans partage avec un autre site ;
@@ -258,7 +273,11 @@ L'application vérifie ces valeurs au démarrage en production (`bin/check-requi
 ### 6.5 Mises à jour
 
 - Les versions correctives de PHP sont appliquées par Hostinger. Le passage à une nouvelle version mineure se fait manuellement, après test en préproduction. PHP 8.3 bénéficie des correctifs de sécurité jusqu'à fin 2027.
-- Dépendances : **aucune en production**, à part Chart.js, embarqué localement avec une version figée et une **empreinte SHA-384 vérifiée par les tests**. En développement : PHPUnit et PHPStan, contrôlés par `composer audit` en CI.
+- Dépendances en production, limitées à **deux** :
+  - **Chart.js** (front), embarqué localement, version figée, empreinte SHA-384 vérifiée par les tests ;
+  - **PHPMailer** (back, **D6**), exception justifiée : SMTP authentifié, TLS, encodage MIME correct, bibliothèque largement auditée. Elle est installée avec `composer install --no-dev` **sur la machine de construction**, et non sur Hostinger. Version figée par `composer.lock` (empreintes vérifiées par Composer). Le dossier `vendor/` est déployé **hors de `public_html`**.
+- En développement : PHPUnit et PHPStan.
+- **`composer audit` en CI** sur toutes les dépendances : une vulnérabilité connue de gravité élevée ou critique **bloque** la livraison.
 - Revue trimestrielle documentée : versions de PHP, de Chart.js et des dépendances de développement, avis de sécurité.
 
 ---
@@ -288,34 +307,58 @@ L'application vérifie ces valeurs au démarrage en production (`bin/check-requi
 - En-têtes : `Content-Disposition: attachment`, `no-store`.
 - Limite : 5 exports par heure. Chaque export est journalisé (événement seulement, sans contenu) et donne lieu à un email de notification au titulaire.
 
-### 7.5 Chiffrement applicatif au repos (D4)
+### 7.5 Chiffrement applicatif au repos (D4, validé)
 
 **Ce qu'il protège** : une fuite de la **base seule**. Par exemple une injection SQL en lecture, un export via phpMyAdmin, une sauvegarde SQL dérobée, ou un accès distant à MySQL mal configuré.
 
-**Ce qu'il ne protège pas** : une compromission du serveur ou du compte Unix (la clé est lisible par le même utilisateur, voir §2.3), ni les **sauvegardes complètes Hostinger**, qui contiennent à la fois les fichiers (donc la clé) et la base.
+**Ce qu'il ne protège pas, et ne sera jamais présenté comme protégeant** :
+- une **compromission complète du serveur** ou du compte Unix : la clé est lisible par le même utilisateur que l'application (§2.3) ;
+- les **sauvegardes complètes Hostinger**, qui contiennent à la fois les fichiers (donc les clés) et la base.
 
-**Mécanisme** : uniquement des primitives reconnues, **aucun chiffrement maison** :
-- **libsodium** : `sodium_crypto_aead_xchacha20poly1305_ietf_encrypt`, avec un nonce aléatoire de 24 octets ;
-- **données associées (AAD)** = `table|colonne|organization_id|id de ligne|version de clé`. Un chiffré copié vers une autre ligne ou une autre organisation **ne se déchiffre pas** ;
-- format stocké : `v1:` + base64(nonce ‖ chiffré) dans une colonne `VARBINARY`/`TEXT` ;
-- clé de 256 bits dans `config/keys/data-key.v1` : **hors de la base**, hors du docroot, droits 600, absente de Git ;
-- rotation : un script en ligne de commande rechiffre les données vers `v2` ; les anciennes versions restent déchiffrables tant que la rotation n'est pas terminée.
+La politique de confidentialité et la fiche sécurité publique emploieront une formulation exacte : « chiffrement des données financières en base, avec des clés stockées séparément de la base ».
 
-**Périmètre proposé au MVP (option B)** : les champs **les plus sensibles** :
-- `financial_profiles` : CA, charges, coûts de personnel, rémunération du dirigeant (coût complet et part incluse), objectif ;
-- `financial_profile_changes` : valeurs avant et après ;
-- `kpi_snapshots` : colonnes monétaires et `context`.
+**Champs chiffrés**
 
-Les prix, offres et simulations restent en clair : ils sont moins sensibles et plus nombreux. L'architecture (convertisseurs de colonnes déclarés dans les dépôts) permet d'étendre le chiffrement à ces données plus tard (option C).
+| Table | Champs |
+|---|---|
+| `financial_profiles` | CA, charges fixes, coûts de personnel, charges variables (attribuables et générales), rémunération du dirigeant (coût complet et part incluse), coût horaire forcé, objectif de CA, part récurrente déclarée |
+| `financial_profile_changes` | valeurs avant et après |
+| `kpi_snapshots` | toutes les valeurs financières (CA, charges, résultat, MRR, coût horaire) et `context` |
+| `recommendations` | `evidence` (contient des valeurs financières) et `impact_amount` |
+| Données figées des simulations et des scénarios (`frozen_context`, `frozen_results`) | elles contiennent le coût horaire et des données dérivées du profil |
 
-**Coût** : ces champs ne sont plus agrégeables en SQL. Ce n'est pas un problème ici, puisque tous les calculs se font déjà en PHP via BCMath. Si la clé est perdue, les données sont **irrécupérables** : la clé est donc incluse dans la procédure de sauvegarde **hors ligne** (§8).
+Restent en clair (moins sensibles, et nécessaires aux contraintes de base) : identifiants, statuts, dates, libellés, prix et temps des brouillons. Ce périmètre pourra être élargi sans refonte.
+
+**Service unique `Security\FieldCrypto`**
+- Aucun autre code n'appelle libsodium pour les données.
+- Les dépôts déclarent leurs colonnes chiffrées (`'revenue' => Encrypted::decimal()`). La conversion se fait **uniquement** dans la couche d'accès aux données, de façon transparente pour les services.
+- Algorithme : `sodium_crypto_aead_xchacha20poly1305_ietf_encrypt` ; nonce aléatoire de 24 octets par valeur.
+- **Données associées (AAD)** = `table|colonne|organization_id|public_id de la ligne|version de clé`. Un chiffré déplacé vers une autre ligne ou une autre organisation **échoue au déchiffrement**, ce qui est journalisé comme un incident d'intégrité.
+- Format stocké : `k<version>:` + base64(nonce ‖ chiffré ‖ tag).
+- Un échec de déchiffrement n'est **jamais** remplacé silencieusement par 0 ou NULL : il lève une exception et produit une erreur 500 avec une référence d'incident.
+
+**Gestion des clés (`Security\Keyring`)**
+- Fichiers `config/keys/data.k1`, `data.k2`… : 32 octets aléatoires (`sodium_crypto_aead_xchacha20poly1305_ietf_keygen`), droits 600, **hors de `public_html` et hors de la base**, absents de Git et des sauvegardes N2 et N3.
+- `config/keys/keyring.json` indique la **version active**, utilisée pour chiffrer, et les **versions acceptées**, utilisées pour déchiffrer.
+- **Sauvegarde des clés** : séparée des sauvegardes de données. Copie hors ligne chiffrée par toi (gestionnaire de mots de passe), à chaque création de clé. Sans la clé, les sauvegardes de données sont inutilisables : la procédure de restauration (§8.2) inclut la restauration des clés.
+- **Rotation** :
+  1. génération de `k(n+1)`, qui devient la version active ;
+  2. `bin/rotate-keys.php` rechiffre les données par lots et reprend là où il s'est arrêté ;
+  3. vérification qu'aucune valeur `k(n)` ne subsiste ;
+  4. retrait de `k(n)` des versions acceptées **après** la fin de la rétention des sauvegardes qui l'utilisent (sinon ces sauvegardes deviendraient illisibles).
+
+  Rotation **annuelle**, ou **immédiate** en cas de suspicion de compromission.
+- `APP_KEY` (signatures HMAC des jetons internes et de l'email haché du journal) est **distincte** des clés de données et suit sa propre rotation.
+
+**Tests** : aller-retour par type ; échec si l'AAD est modifiée ; lecture d'une donnée `k1` après passage à `k2` ; reprise de la rotation après interruption ; **test de restauration** (sauvegarde N2 et clés restaurées, puis déchiffrement d'un échantillon : §8.2, étape 5) ; aucune valeur en clair dans la base après écriture (lecture SQL directe).
 
 ### 7.6 Suppression des données
 
 | Situation | Traitement |
 |---|---|
 | Suppression d'un objet (simulation, offre…) | Confirmation explicite, puis suppression définitive en cascade |
-| **Suppression du compte** (D8) | Réauthentification, puis compte **verrouillé immédiatement** (plus d'accès, sessions invalidées) et **suppression définitive programmée à J+7**. Un lien d'annulation est envoyé par email. À J+7, le cron supprime l'organisation (cascade sur toutes les tables), les adhésions et l'utilisateur, puis vérifie par comptage qu'il ne reste aucune ligne. Un événement anonymisé `account.purged` est conservé, sans email ni données |
+| **Suppression du compte** (D8) | 1. **Vérification d'identité** : saisie du mot de passe (réauthentification), puis confirmation par un lien envoyé à l'adresse du compte (à usage unique, valable 1 h).<br>2. **Désactivation immédiate** : aucun accès, sessions invalidées, données plus servies par l'API.<br>3. **Période d'annulation de 7 jours** : l'annulation exige à nouveau une vérification d'identité (mot de passe et lien email).<br>4. À J+7, le cron **supprime les données actives** : organisation (cascade sur toutes les tables), adhésions, utilisateur. Il vérifie par comptage qu'il ne reste aucune ligne et enregistre le `public_id` dans `deletion_registry`. Un événement anonymisé `account.purged` est conservé, sans email ni données |
+| Obligations de conservation | **MVP** : aucune obligation identifiée (service gratuit, sans facturation). **En cas de commercialisation** : les pièces comptables (factures) sont à conserver **10 ans** (article L123-22 du Code de commerce). Elles seraient gérées dans un module de facturation distinct, avec le **minimum** de données (identité de facturation, montants facturés par Agency OS), **jamais** les données financières de l'agence. Journal de sécurité : 6 mois (intérêt légitime, preuve en cas d'incident). Ces durées figureront dans la politique de confidentialité |
 | Sauvegardes | Les données supprimées disparaissent des sauvegardes **à l'expiration de la rétention** (30 jours pour nos sauvegardes chiffrées ; durée des sauvegardes Hostinger à confirmer). Ce délai est **indiqué dans la politique de confidentialité**. Une restauration ultérieure est suivie de la **réapplication des suppressions** : un registre des suppressions minimal (`public_id` de l'organisation et date, sans données) est conservé pendant la durée de rétention pour cela |
 
 ---
@@ -328,7 +371,7 @@ Les prix, offres et simulations restent en clair : ils sont moins sensibles et p
 |---|---|---|---|---|
 | **N1 : Hostinger** | fichiers et bases du compte | selon l'offre (**à confirmer** dans hPanel) | selon l'offre | géré par Hostinger (non maîtrisé) |
 | **N2 : sauvegardes applicatives** | base Agency OS | **quotidienne** (cron à 03:00) | **7 quotidiennes et 4 hebdomadaires** (environ 30 jours) | **oui, par clé publique** |
-| **N3 : copie hors site** | les fichiers N2 chiffrés | hebdomadaire | 3 mois | déjà chiffrés |
+| **N3 : stockage externe européen** (D5) | les fichiers N2 chiffrés | **quotidienne** (après N2) | 30 quotidiennes et 12 hebdomadaires (environ 3 mois) | déjà chiffrés avant envoi, plus le chiffrement côté fournisseur |
 
 **N2 en détail** :
 - Le cron exécute `bin/backup-db.sh` (le shell est autorisé pour le cron ; PHP n'en a pas besoin) :
@@ -340,7 +383,13 @@ Les prix, offres et simulations restent en clair : ils sont moins sensibles et p
 - Un manifeste accompagne chaque sauvegarde : date, taille, SHA-256, version du schéma et nombre de lignes par table (sans données).
 - Des contrôles automatiques valident la sauvegarde : présence du marqueur `-- Dump completed`, taille dans la plage attendue, rotation. **En cas d'échec, un email d'alerte est envoyé.**
 
-**N3** : arbitrage **D5**. Une copie stockée sur le même serveur ne protège pas contre la perte du compte ou du serveur.
+**N3 en détail (D5, validé)**
+- **Stockage objet compatible S3, hébergé dans l'UE**, avec **verrouillage d'objets** (*Object Lock*, mode « conformité ») : une sauvegarde envoyée ne peut être ni modifiée ni supprimée avant la fin de sa rétention, **même avec des identifiants volés**.
+- Identifiants **en écriture seule** (droit d'envoyer, pas de supprimer ni de lister) stockés dans `config/.env`. Un serveur compromis ne peut donc pas effacer l'historique.
+- Fournisseur à choisir parmi les offres européennes qui proposent le verrouillage d'objets, par exemple Scaleway (Paris), OVHcloud (France) ou Backblaze B2 (région UE). Le choix est soumis à ton accord, car c'est un nouveau sous-traitant RGPD (action **A7**, §16).
+- Envoi par `bin/offsite-upload.php`, qui utilise `curl`, disponible. La signature des requêtes S3 (AWS Signature V4, standard ouvert fondé sur HMAC-SHA256) est implémentée dans une petite classe **testée contre les vecteurs de test officiels**. C'est une signature de protocole, et non un chiffrement maison. L'alternative, le SDK AWS, est jugée trop lourde.
+- Contrôle quotidien : présence de l'objet du jour, taille et SHA-256 identiques au manifeste. Alerte en cas d'écart.
+- **Solution provisoire, seulement tant que l'application ne contient que des données de démonstration** : téléchargement manuel hebdomadaire des fichiers N2 chiffrés, consigné dans `docs/runbooks/sauvegardes.md`. Elle n'est **pas** acceptable pour des données réelles.
 
 ### 8.2 Restauration documentée (`docs/runbooks/restauration.md`, phase 5)
 
@@ -373,7 +422,7 @@ Les prix, offres et simulations restent en clair : ils sont moins sensibles et p
 
 - **Responsable de traitement** : l'éditrice d'Agency OS, pour les comptes, la sécurité et le service. Ses coordonnées figureront dans les mentions légales.
 - Lors d'une commercialisation, les données métier saisies par une agence pourront relever de la **sous-traitance** (article 28) : un contrat de sous-traitance sera alors à prévoir.
-- **Sous-traitants** : Hostinger (hébergement, CDN si conservé, email) ; éventuellement le fournisseur de stockage hors site (**D5**). **Aucun autre service tiers** : pas d'outil d'analyse d'audience, pas de polices ni de scripts externes, pas de pixel de suivi.
+- **Sous-traitants** : Hostinger (hébergement, email SMTP ; CDN seulement s'il est un jour placé dans le chemin de l'application) et le **fournisseur de stockage externe européen** (D5, à choisir). **Aucun autre service tiers** : pas d'outil d'analyse d'audience, pas de polices ni de scripts externes, pas de pixel de suivi.
 - Seuls des cookies **strictement nécessaires** sont utilisés (session et préférences sans données personnelles). **Aucun bandeau de consentement n'est requis** (exemption CNIL), et le principe est rappelé dans la politique.
 
 ### 9.2 Minimisation
@@ -497,7 +546,7 @@ L'utilisateur voit ses **10 dernières connexions** (date, appareil approximatif
 
 1. **Revue de sécurité** du code modifié, avec la checklist ASVS correspondante (`docs/security/asvs-checklist.md`).
 2. **Scan dynamique** OWASP ZAP (*baseline*, puis *scan actif* authentifié) **sur la préproduction**, jamais sur la production (**D11**).
-3. `bin/security-smoke.php https://…` : HTTPS et HSTS, en-têtes, fichiers sensibles inaccessibles, cookies, 404 sur un `public_id` étranger, 413 et 429.
+3. `bin/security-smoke.php https://…` : HTTPS et HSTS, en-têtes, `Cache-Control: no-store` sur les réponses authentifiées, détection d'un CDN inattendu (résolution DNS et en-têtes de cache), fichiers sensibles inaccessibles, cookies, 404 sur un `public_id` étranger, 413 et 429.
 4. `bin/check-requirements.php` : options PHP, extensions, droits des fichiers, absence d'accès distant à MySQL (contrôle manuel dans hPanel), cron actifs.
 5. **Test de restauration** récent (moins de 30 jours).
 6. **Registre des risques** à jour (`docs/security/risk-register.md`). **Aucun risque critique ou élevé ouvert.**
@@ -513,28 +562,112 @@ L'utilisateur voit ses **10 dernières connexions** (date, appareil approximatif
 
 ---
 
-## 13. Arbitrages à valider
+### 12.4 Préproduction (D11, renforcée)
 
-| # | Sujet | Options | Recommandation |
-|---|---|---|---|
-| **D1** | **Compte Unix partagé** avec tes autres sites (dont plusieurs WordPress) | (a) rester sur ce compte en durcissant les autres sites ; (b) **compte ou offre Hostinger dédié** à Agency OS ; (c) VPS (plus de contrôle, mais l'administration système est à ta charge) | **(a) pour le MVP de portfolio**, qui ne contient que des données de démo et de test, avec revue et mise à jour des sites WordPress du compte et suppression des sites inutilisés. **(b) obligatoire avant d'accueillir des données réelles de clients.** Je l'inscris comme condition de commercialisation dans le registre des risques |
-| **D2** | **CDN Hostinger activé** sur le sous-domaine | (a) le désactiver ; (b) le garder et faire confiance à un en-tête d'IP transmis par le CDN | **(a)**. Fiabilité de l'IP pour la limitation des tentatives et les journaux, aucun risque de mise en cache de pages authentifiées ; le gain de performance est négligeable pour une application authentifiée et légère. Je peux le désactiver via l'API avec ton accord |
-| **D3** | **Extension `sodium`** | activer, ou rester sur OpenSSL (AES-256-GCM) et bcrypt | **Activer** : Argon2id, chiffrement des données et scellement des sauvegardes avec une API difficile à mal utiliser. Je peux l'activer via l'API avec ton accord |
-| **D4** | **Chiffrement applicatif au repos** | (A) aucun ; (B) champs les plus sensibles (profil financier, journal, instantanés) ; (C) toutes les données financières | **(B)**, en assumant ses limites (§7.5) : protection contre une fuite de la base seule, pas contre une compromission du compte |
-| **D5** | **Copie de sauvegarde hors site (N3)** | (a) téléchargement manuel hebdomadaire par toi ; (b) envoi automatique vers un stockage objet européen (nouveau sous-traitant, quelques centimes par mois) ; (c) aucune | **(b)** pour la fiabilité, sinon **(a)** pour le MVP. Les fichiers sont chiffrés avant envoi dans les deux cas |
-| **D6** | **Envoi d'emails** (vérification, réinitialisation, alertes) | (a) `mail()` de PHP via le serveur Hostinger, avec SPF, DKIM et DMARC du domaine ; (b) SMTP authentifié via une bibliothèque (PHPMailer, nouvelle dépendance) | **(a)**, sans dépendance supplémentaire, après vérification de SPF, DKIM et DMARC. Passage à (b) si la délivrabilité est insuffisante |
-| **D7** | **Identifiants publics aléatoires** | aléatoires, ou séquentiels avec contrôles seuls | **Aléatoires** (défense en profondeur, pas d'énumération) |
-| **D8** | **Suppression du compte** | immédiate, ou différée de 7 jours avec annulation | **Différée de 7 jours**, avec verrouillage immédiat (protection contre les erreurs, compatible RGPD si l'utilisateur en est informé) |
-| **D9** | **Vérification de l'email obligatoire** avant le premier accès | oui ou non | **Oui** : anti-énumération, adresse valide pour la réinitialisation. La démo reste accessible sans compte |
-| **D10** | **Moindre privilège MySQL** | séparer un utilisateur applicatif et un utilisateur de migration si hPanel le permet ; sinon mesures compensatoires (§6.4) | **Vérifier dans hPanel**, puis appliquer la meilleure option disponible |
-| **D11** | **Préproduction** | sous-domaine `staging.agency-os.azzurra-pro.com`, base séparée, données fictives, protégé par authentification HTTP | **Oui** : indispensable pour les scans dynamiques et les tests de restauration sans toucher à la production |
+| Exigence | Mise en œuvre |
+|---|---|
+| Sous-domaine protégé | `staging.agency-os.azzurra-pro.com` (création soumise à ton accord, action **A8**), avec une **authentification HTTP Basic** devant tout le site. Le fichier `.htpasswd` est placé **hors** de `public_html`, avec un mot de passe aléatoire propre à la préproduction. Deuxième barrière : les comptes applicatifs habituels |
+| Base distincte | Base MySQL et utilisateur **distincts**, avec un mot de passe différent de la production |
+| Identifiants distincts | `config/.env`, `APP_KEY`, clés de données, clé publique de sauvegarde et identifiants SMTP **propres** à la préproduction. Aucun secret partagé avec la production, et aucune copie de la base de production |
+| Données fictives uniquement | Jeux de données générés (`bin/seed-demo.php`) ; `APP_ENV=staging` ; un contrôle au démarrage refuse de fonctionner si `APP_REAL_DATA_ALLOWED=true` |
+| Pas d'indexation | En-tête `X-Robots-Tag: noindex, nofollow, noarchive` sur toutes les réponses, `robots.txt` en `Disallow: /`, et l'authentification HTTP empêche de toute façon l'exploration |
+| Pas d'emails réels | Transport d'email `capture` : les messages sont écrits dans `storage/mail-capture/` (droits 700, purgés au bout de 7 jours) et **jamais envoyés**. Une liste blanche facultative (`MAIL_ALLOWLIST=@azzurra-pro.com`) permet de tester la délivrabilité vers tes propres adresses ; toute autre adresse est bloquée et journalisée |
+| Fichiers sensibles | Mêmes règles `.htaccess` qu'en production ; `bin/security-smoke.php` est exécuté **aussi** sur la préproduction |
+| Bandeau | « Préproduction : données fictives » sur toutes les pages |
 
-### Changements induits dans les documents précédents (appliqués après validation)
+## 13. Arbitrages validés (10/11/2026)
 
-| Document | Avant | Après |
+| # | Décision | Mise en œuvre |
 |---|---|---|
-| 01 §4 | Mot de passe oublié « souhaitable », export JSON « souhaitable » | **Indispensables** (sécurité, RGPD) |
-| 02 §4 | bcrypt ou Argon2id, 10 caractères minimum, inactivité de 2 h, cookie générique | Argon2id via sodium, **12 caractères**, **60 min**, cookie `__Host-` et stockage dédié des sessions |
-| 02 §5 | Identifiants auto-incrémentés exposés ; clés étrangères simples | `public_id` aléatoires ; **clés étrangères composites** avec l'organisation ; tables `security_events`, `user_mfa_methods`, `user_recovery_codes`, `email_verifications`, `deletion_registry` ; colonnes chiffrées (D4) |
-| 02 §9 | Démo sans quotas par organisation | Quotas par démo, droits réduits |
-| 02 §11 | Deux tâches cron | Purge de la démo (toutes les heures), instantanés et maintenance (chaque jour), sauvegarde (chaque jour), détection (toutes les 15 min), purge des journaux (chaque jour) |
+| **D1** | Hébergement partagé **validé pour le portfolio, avec des données fictives uniquement**. Avant toute donnée financière réelle : hébergement suffisamment isolé, **revue de sécurité**, **vérification de la configuration de production**. Un changement d'hébergement ne vaut pas garantie | Drapeau `APP_REAL_DATA_ALLOWED=false` : l'inscription publique est **désactivée** en production. Seuls la démo et des comptes de test créés en ligne de commande existent, avec la mention « données fictives » sur l'écran d'inscription et dans les CGU. Lever ce drapeau suppose la checklist « données réelles » (§14.3) |
+| **D2** | CDN : **vérifier avant de décider**, ne rien désactiver automatiquement. Exclure du cache les pages authentifiées, l'API privée et les contenus financiers ; s'il n'est pas possible de le garantir, désactiver le CDN pour l'application | **Constat du 10/11** : le CDN n'est pas dans le chemin effectif (§1.1). L'application envoie **de toute façon** `Cache-Control: private, no-store` et `Vary: Cookie` sur toute réponse authentifiée, sur toute réponse de l'API et sur les erreurs. Seuls `assets/*` (fichiers versionnés par empreinte) sont publics et mis en cache. **Protocole de vérification** (en préproduction, si le CDN est un jour actif) : comparer deux requêtes successives sur une page authentifiée et sur `/api/v1/dashboard` avec deux comptes différents ; examiner l'en-tête de statut du cache ; vérifier que `no-store` est respecté et que l'IP du visiteur est transmise et exploitable. Si l'un de ces points échoue : désactivation du CDN pour ce sous-domaine (avec ton accord). Le smoke test (§12.2) alerte si le DNS ou les en-têtes révèlent un CDN actif |
+| **D3** | Sodium validé, **disponibilité effective à vérifier** avant utilisation | Activation soumise à ton accord (action **A1**). Puis `bin/check-requirements.php` vérifie que l'extension est chargée, que `sodium_crypto_aead_xchacha20poly1305_ietf_encrypt`, `sodium_crypto_box_seal` et `crypto_secretstream` existent, et que `PASSWORD_ARGON2ID` est défini et fonctionne réellement (hachage et vérification de test). En production, l'application **refuse de démarrer** si un de ces points manque. Pas de bascule silencieuse : bcrypt n'est utilisé que si Argon2id est absent, et cela est signalé |
+| **D4** | Chiffrement des champs financiers sensibles, y compris dans les journaux et les instantanés ; service centralisé ; clés hors du répertoire public, versionnées, avec rotation et tests de restauration ; jamais présenté comme une protection contre la compromission du serveur | §7.5 |
+| **D5** | Stockage externe européen chiffré, avec rétention et tests de restauration ; le téléchargement manuel n'est que provisoire | §8.1 (N3) ; choix du fournisseur : action **A7** |
+| **D6** | **SMTP authentifié avec PHPMailer**, au lieu de `mail()` ; vérifier SPF, DKIM et DMARC | §6.5 (dépendance) ; `Mail\Mailer` est une façade unique (transports `smtp`, `capture`, `null`). SMTP Hostinger en **TLS obligatoire** (port 465 en TLS implicite, ou 587 avec STARTTLS), vérification du certificat activée, délai d'attente de 10 s. Boîte d'envoi dédiée (action **A5**). Les emails ne contiennent **jamais** de mot de passe ni de donnée financière, seulement des liens à usage unique. Constat DNS : SPF et DKIM sont en place, **DMARC est à durcir** (action **A6**) |
+| **D7** | Identifiants non prédictibles pour les ressources exposées ; **jamais considérés comme une mesure d'isolation** | §4 : `public_id` de 128 bits, en plus des trois niveaux de contrôle. Les tests d'accès croisé utilisent des `public_id` **valides** d'une autre organisation : ils prouvent que l'isolation ne repose pas sur le secret de l'identifiant |
+| **D8** | Désactivation immédiate, annulation possible pendant 7 jours après vérification d'identité, puis suppression des données actives ; traitement des sauvegardes et obligations de conservation documentés | §7.6 |
+| **D9** | Vérification de l'email obligatoire avant toute fonctionnalité privée ; jetons temporaires à usage unique ; renvois limités | §3.2 |
+| **D10** | Vérifier les privilèges dans hPanel et appliquer le moindre privilège ; sinon, documenter le risque résiduel | §6.4 ; action **A4** ; risque **R4** |
+| **D11** | Préproduction : sous-domaine protégé, base et identifiants distincts, données fictives, pas d'indexation, pas d'emails réels, fichiers sensibles inaccessibles | §12.4 ; action **A8** |
+
+---
+
+## 14. Dépendances techniques
+
+### 14.1 Prérequis de l'hébergement
+
+| Prérequis | État au 10/11/2026 | Bloque |
+|---|---|---|
+| PHP ≥ 8.2 | ✅ 8.3.36 | — |
+| `bcmath`, `intl`, `mbstring`, `pdo_mysql`, `openssl`, `curl` | ✅ actifs | — |
+| `sodium` | ⏳ disponible, **désactivée** | Argon2id, chiffrement des champs, scellement des sauvegardes (A1) |
+| Cron (ligne PHP toutes les 15 min, ligne shell quotidienne) | ✅ disponible, rien de configuré | Démo, instantanés, sauvegardes, alertes (A3) |
+| SSH | ❓ à vérifier | Migrations, tests de restauration (sinon phpMyAdmin, ce qui est moins sûr et plus lent) |
+| Version de MySQL ou MariaDB | ❓ à vérifier | Colonne générée UNIQUE (une simulation active par prestation), `CHECK`, JSON |
+| Privilèges MySQL ajustables | ❓ à vérifier (A4) | Moindre privilège (sinon R4) |
+| Prise en compte des en-têtes de `.htaccess` par LiteSpeed | ❓ test au déploiement | En-têtes des fichiers statiques. Les en-têtes des pages et de l'API sont envoyés par PHP de toute façon |
+| `mysqldump` disponible pour le cron shell | ❓ à vérifier au premier déploiement | Sauvegardes N2 (alternative : export par PDO en ligne de commande, plus lent) |
+| Connexion HTTPS sortante (`curl`) | ✅ extension présente ; ❓ pare-feu sortant à tester | Envoi externe N3 |
+| Boîte email SMTP | ⏳ à créer (A5) | Vérification de l'email, réinitialisation, alertes |
+| Sous-domaine de préproduction | ⏳ à créer (A8) | Scans dynamiques, tests de restauration |
+| Centre de données dans l'UE | ❓ à vérifier | RGPD |
+
+### 14.2 Dépendances logicielles
+
+| Composant | Usage | Environnement | Contrôle |
+|---|---|---|---|
+| Chart.js (version figée) | graphiques | production (front) | empreinte SHA-384 en test ; revue trimestrielle des avis de sécurité |
+| PHPMailer (version figée) | SMTP | production (back), hors `public_html` | `composer.lock`, `composer audit` bloquant |
+| PHPUnit, PHPStan | tests, analyse statique | développement, CI | `composer audit` |
+| gitleaks, OWASP ZAP | secrets, scan dynamique | CI, poste de test | — |
+| **Accès en écriture au dépôt GitHub** | CI, revue, historique | — | ⚠️ **actuellement refusé** (push en erreur 403) : la CI ne peut pas être mise en place tant que l'accès n'est pas rétabli |
+
+### 14.3 Checklist « passage aux données réelles » (condition pour lever `APP_REAL_DATA_ALLOWED`)
+
+1. Hébergement isolé choisi et configuré : aucun autre site sur le même utilisateur système.
+2. Toutes les vérifications de §14.1 refaites **sur ce nouvel environnement**.
+3. Revue de sécurité complète (§12.2), avec scan dynamique authentifié et **aucun risque critique ou élevé ouvert**.
+4. Stockage externe N3 opérationnel (le téléchargement manuel n'est plus admis) et **test de restauration réussi**, clés comprises.
+5. DMARC durci (au minimum `p=quarantine`) et délivrabilité testée.
+6. Documents RGPD publiés ; registre des traitements à jour ; sous-traitants identifiés.
+7. Rotation de tous les secrets générés pendant la phase de portfolio.
+
+---
+
+## 15. Risques résiduels
+
+Le registre détaillé sera tenu dans `docs/security/risk-register.md`. Les risques sont évalués **avec** les mesures de ce document.
+
+| # | Risque | Vraisemblance | Impact | Niveau | Traitement |
+|---|---|---|---|---|---|
+| R1 | Un autre site du compte (WordPress) est compromis et lit les fichiers, les clés et la base d'Agency OS | moyenne | élevé avec des données réelles ; **faible avec des données fictives** | **Accepté pour le portfolio** (D1) | Données fictives uniquement ; mise à jour et réduction des sites WordPress du compte (recommandé) ; hébergement isolé obligatoire avant les données réelles |
+| R2 | Compromission du serveur : le chiffrement au repos est contourné (clé sur le même système) | faible à moyenne | élevé | Accepté et **documenté** | Limite exposée explicitement (§7.5) ; sauvegardes scellées par clé publique (les sauvegardes **passées** restent protégées) ; détection et rotation (§10) |
+| R3 | Les sauvegardes complètes Hostinger contiennent les clés **et** la base | faible | élevé | Accepté | Hors de notre contrôle ; Hostinger est sous-traitant ; à réévaluer avec le futur hébergement |
+| R4 | Utilisateur MySQL avec tous les droits (si A4 ne permet pas de restreindre) : une injection SQL pourrait détruire des données | faible (requêtes préparées exclusivement, contrôles en CI) | élevé | Réduit, **résiduel à confirmer** après A4 | Pas de DDL dans le code web ; sauvegardes N2 et N3 immuables ; tests d'injection |
+| R5 | Le CDN est activé ultérieurement par une modification du DNS : mise en cache ou IP masquée | faible | moyen | Réduit | `no-store` et `private` systématiques ; smoke test et alerte en cas de changement ; protocole D2 |
+| R6 | Usurpation de l'adresse d'envoi tant que DMARC est en `p=none` (hameçonnage se faisant passer pour Agency OS) | moyenne | moyen | **À traiter** (A6) | Durcissement progressif de DMARC, avec rapports agrégés |
+| R7 | Panne ou absence du cron : instantanés, purges et sauvegardes non réalisés | moyenne | moyen | Réduit | Battement et alerte (moins de 26 h), purge de secours de la démo, jours manquants signalés, contrôle des sauvegardes |
+| R8 | Perte des clés de données ou de la clé privée de sauvegarde | faible | **très élevé** (données ou sauvegardes illisibles) | Réduit | Copies hors ligne, testées lors des restaurations mensuelles |
+| R9 | Vulnérabilité dans PHPMailer, Chart.js ou PHP | moyenne dans le temps | variable | Réduit | Surface minimale ; `composer audit` bloquant ; revue trimestrielle ; mises à jour PHP |
+| R10 | Dépôt GitHub inaccessible : pas de CI, donc pas de contrôles automatiques avant livraison | **actuelle** | moyen | **À traiter** | Rétablir l'accès ; en attendant, mêmes contrôles exécutés localement avant chaque livraison |
+| R11 | Erreur d'autorisation non couverte (nouvelle route) | faible | élevé | Réduit | Les trois niveaux d'isolation ; un test de couverture des routes bloque toute route sans test d'isolation |
+| R12 | Exfiltration lente par un utilisateur authentifié (son **propre** espace) | — | — | Hors périmètre | Il s'agit de ses propres données |
+
+---
+
+## 16. Actions d'infrastructure prévues : **aucune réalisée, chacune soumise à ton accord explicite**
+
+| # | Action | Où | Prérequis pour |
+|---|---|---|---|
+| A1 | Activer l'extension `sodium` pour `agency-os.azzurra-pro.com` | hPanel ou API Hostinger | D3, D4, sauvegardes |
+| A2 | Durcir les options PHP du site (`expose_php`, `allow_url_fopen`, `log_errors`, tailles, `max_execution_time`, sessions, éventuellement `open_basedir`) | hPanel ou API | §6.3 |
+| A3 | Créer les tâches cron (ligne PHP toutes les 15 min, ligne shell de sauvegarde) | hPanel ou API | §4 du doc 05, §8 |
+| A4 | Vérifier les privilèges MySQL et la possibilité d'un second utilisateur ; créer la base de production (et celle de restauration) | hPanel | D10 |
+| A5 | Créer la boîte d'envoi SMTP (par exemple `no-reply@azzurra-pro.com`) | hPanel → Emails | D6, D9 |
+| A6 | Durcir DMARC de `azzurra-pro.com` : `p=none` avec `rua` (rapports) pendant 2 à 4 semaines, puis `p=quarantine`, puis éventuellement `p=reject`. ⚠️ **Concerne tous les emails du domaine**, et pas seulement Agency OS | DNS | R6 |
+| A7 | Choisir le fournisseur de stockage externe européen avec verrouillage d'objets, créer le bucket et les identifiants en écriture seule | fournisseur choisi | D5 |
+| A8 | Créer le sous-domaine `staging.agency-os…`, sa base, son utilisateur et son authentification HTTP | hPanel | D11 |
+| A9 | (seulement si le protocole D2 échoue) désactiver le CDN pour le sous-domaine | hPanel ou API | D2 |
+
+Les seules opérations réalisées sur Hostinger depuis le début du projet sont la **création du sous-domaine** (à ta demande) et des **lectures** : configuration PHP, SSL, CDN, bases, cron, DNS, en-têtes HTTP.

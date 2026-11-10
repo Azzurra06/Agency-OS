@@ -576,4 +576,23 @@ Les résolutions **C1 à C10 sont validées**.
 | N1 | Nature des données | Dans tous les modules, on distingue clairement : **données réelles déclarées**, **hypothèses et simulations**, **résultats calculés** et **versions historiques figées**. Modèle commun décrit en 05 §1. |
 | N2 | Traçabilité des recommandations | Chaque recommandation indique **les données sur lesquelles elle repose** (source, nature, date, version) et signale les données **incomplètes** ou **anciennes** (05 §2). |
 
-Les arbitrages de sécurité **D1 à D11** ([04-securite.md §13](04-securite.md)) restent **en attente de validation**.
+Les arbitrages de sécurité **D1 à D11** sont validés (voir §13).
+
+---
+
+## 13. Sécurité et confidentialité : décisions validées (10/11/2026)
+
+Les arbitrages **D1 à D11** sont validés avec des ajustements. Le détail figure dans [04-securite.md §13](04-securite.md), les dépendances techniques en §14, les risques résiduels en §15 et les actions d'infrastructure, toutes soumises à accord explicite, en §16.
+
+Effets sur le cadrage :
+
+| Point du cadrage | Avant | Après |
+|---|---|---|
+| §4 Socle | Mot de passe oublié « souhaitable » | **Indispensable**, avec vérification de l'email obligatoire (D9) |
+| §4 Paramètres | Export JSON « souhaitable » | **Indispensable** (RGPD) |
+| §4 Socle | Inscription publique | **Désactivée tant que `APP_REAL_DATA_ALLOWED=false`** (D1) : portfolio et démo **avec des données fictives uniquement**. L'écran d'inscription est conservé pour la démonstration du parcours, mais réservé aux comptes de test |
+| §6 G4 | Suppression immédiate du compte | Désactivation immédiate, annulation possible pendant 7 jours après vérification d'identité, puis suppression des données actives (D8) |
+| §8 Risques | Email par SMTP | **PHPMailer et SMTP authentifié** (D6) : deuxième et dernière dépendance de production, après Chart.js |
+| Environnements | Production seule | **Préproduction** isolée et non indexée, sans envoi d'emails réels (D11) |
+
+**Règle permanente** : aucune modification de configuration Hostinger (CDN, extensions PHP, options, cron, DNS, bases, emails) sans accord explicite.

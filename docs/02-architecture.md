@@ -147,7 +147,7 @@ Pendant le calcul, la dernière valeur reste affichée avec un indicateur discre
 
 ## 4. Sécurité
 
-> ⚠️ Cette section est **remplacée** par [04-securite.md](04-securite.md) dès sa validation. En cas de divergence, c'est 04 qui fait foi.
+> ⚠️ Cette section est **remplacée** par [04-securite.md](04-securite.md), validé le 10/11/2026. En cas de divergence, c'est 04 qui fait foi.
 
 | Sujet | Mise en œuvre |
 |---|---|
