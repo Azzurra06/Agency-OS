@@ -596,3 +596,20 @@ Effets sur le cadrage :
 | Environnements | Production seule | **Préproduction** isolée et non indexée, sans envoi d'emails réels (D11) |
 
 **Règle permanente** : aucune modification de configuration Hostinger (CDN, extensions PHP, options, cron, DNS, bases, emails) sans accord explicite.
+
+---
+
+## 14. Distinction entre MVP portfolio et SaaS commercial (10/11/2026)
+
+Agency OS est d'abord un **projet de portfolio**, avec des **données fictives uniquement**. Le déploiement commercial se fera plus tard, sur une infrastructure dédiée. Le détail est dans [06-roadmap.md](06-roadmap.md).
+
+| Point du cadrage | Effet pour le MVP portfolio |
+|---|---|
+| Public (§2) | Visiteurs du portfolio, recruteurs et prospects. Les agences réelles sont la cible du SaaS commercial |
+| Parcours P0 (démo) | **Parcours principal** du portfolio |
+| Parcours P1 (inscription) | Inscription publique **désactivée** ; parcours présenté avec des comptes de test |
+| Parcours P6 (suivi mensuel) | Démontré par des instantanés **fictifs** générés à la création de la démo |
+| Modules A à F | **Tous développés et fonctionnels**, sans réduction de périmètre |
+| Sécurité du code | **Complète** (04-securite.md) |
+| Infrastructure | Seule une base dédiée est créée. Cron, emails et sauvegardes externes sont préparés dans le code mais pas activés. DMARC, préproduction et CDN sont reportés au SaaS commercial |
+| Saisie de données | Les formulaires financiers ne doivent **jamais** inviter à saisir de vraies données : préremplissage fictif, bandeau, mentions explicites |

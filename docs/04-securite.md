@@ -18,6 +18,7 @@ Vérifications faites le 10/11/2026 via l'API Hostinger sur le compte `u70077005
 | Compte Unix | **Partagé** avec les autres sites du compte (au moins 6 sites `*.azzurra-pro.com`, dont plusieurs WordPress, et 19 bases de données) | ⚠️ **Risque principal**, voir §2.3 et l'arbitrage **D1** |
 | PHP | 8.3.36 ; versions disponibles jusqu'à 8.5 | Conforme |
 | Extensions | actives : `bcmath`, `intl`, `mbstring`, `pdo_mysql`, `openssl`, `curl` ; **`sodium` disponible mais désactivée** | Argon2id et chiffrement libsodium possibles après activation (**D3**) |
+| **Portée réelle des réglages PHP** (constat du 10/11/2026, voir §17) | Extensions et options PHP **partagées par tous les sites du compte qui utilisent la même version de PHP**, et non réglées site par site. Sites en 8.3 : `agency-os`, `azzurra-pro.com`, `apercu`, `amani-events`. Sites en 8.2 : `v2`, `bell-extension`, `apaisio`, `boxe`, `wedizz` | **Aucun réglage PHP ne peut être isolé à Agency OS tant qu'il partage sa version avec d'autres sites.** Le durcissement passe donc **par le code** (§6.3) |
 | Fonctions désactivées | `exec`, `shell_exec`, `system`, `passthru`, `popen`, `proc_open`… | PHP ne peut pas lancer `mysqldump` ; en revanche, une **tâche cron peut exécuter une commande shell** (§8) |
 | Options PHP par défaut | `display_errors=Off` ✅ ; `expose_php=On` ❌ ; `allow_url_fopen=On` ❌ ; `session.cookie_secure/httponly=Off` ❌ ; `samesite=None` ❌ ; `use_strict_mode=Off` ❌ ; `log_errors=Off` ❌ ; `post_max_size=256M` ❌ | Durcissement **par le code** à l'exécution (les options de session sont modifiables par `ini_set`) **et** dans hPanel (§6.3) |
 | SSL | **Actif**, certificat permanent (`hssl`), **redirection HTTPS activée** | HTTPS obligatoire, déjà en place ; HSTS à ajouter (§5) |
@@ -240,21 +241,21 @@ domains/agency-os.azzurra-pro.com/          750
 - `APP_KEY` (signatures internes) et la clé de chiffrement des données sont **distinctes** et versionnées (`v1`, `v2`…) pour permettre une rotation.
 - Identifiants MySQL : mot de passe aléatoire de 32 caractères, stocké uniquement dans `config/.env` ; **aucun accès distant autorisé** pour cette base. La connexion se fait sur `127.0.0.1` ou `localhost`.
 
-### 6.3 Durcissement de PHP dans hPanel (pour ce site uniquement)
+### 6.3 Durcissement de PHP : par le code, sans toucher à hPanel
 
-| Option | Par défaut | Cible | Remarque |
-|---|---|---|---|
-| `expose_php` | On | **Off** | |
-| `allow_url_fopen` | On | **Off** | l'application n'ouvre aucune URL distante (`curl` reste disponible si besoin) |
-| `log_errors` | Off | **On** | avec `error_log` vers `storage/logs/php-error.log` (défini par le code) |
-| `display_errors` | Off | Off | aussi forcé par le code |
-| `post_max_size` / `upload_max_filesize` | 256M | **2M** / **1M** | |
-| `max_execution_time` | 300 | **30** (web) | les scripts CLI fixent leur propre limite |
-| `session.*` | non sécurisées | sécurisées | forcées par le code (§3.4) et alignées dans hPanel |
-| `open_basedir` | vide | `…/domains/agency-os.azzurra-pro.com:/tmp` | à tester ; défense partielle contre la lecture d'autres fichiers par PHP (n'empêche pas un autre site compromis de lire Agency OS) |
-| Extension `sodium` | désactivée | **activée** | **D3** |
+Constat (§1.1) : les réglages de hPanel s'appliquent à **tous les sites d'une même version de PHP**. Pour le MVP portfolio, le durcissement est donc fait **exclusivement par l'application**. Il ne touche qu'Agency OS et sera transférable tel quel vers le futur hébergement.
 
-L'application vérifie ces valeurs au démarrage en production (`bin/check-requirements.php` et une vérification d'exécution qui journalise un avertissement en cas d'écart).
+| Réglage | Mise en œuvre dans le code | Limite |
+|---|---|---|
+| `display_errors=0`, `log_errors=1`, `error_log` vers `storage/logs/` | `ini_set()` dans `bootstrap.php`, avant tout traitement | Une erreur de syntaxe dans `bootstrap.php` lui-même échapperait à ce réglage, mais `display_errors` vaut déjà Off par défaut sur le serveur ✅ |
+| Version de PHP exposée (`X-Powered-By`) | `header_remove('X-Powered-By')` sur chaque réponse PHP | `expose_php` ne peut pas être modifié à l'exécution ; l'en-tête est retiré, ce qui donne le même résultat pour les réponses PHP |
+| `session.*` (`cookie_secure`, `httponly`, `samesite`, `use_strict_mode`, `use_only_cookies`, `sid_length`, `save_path`, `gc_maxlifetime`) | `ini_set()` et `session_set_cookie_params()` avant `session_start()` (§3.4) | Aucune |
+| `allow_url_fopen` | Non modifiable à l'exécution. **Règle de code** : aucun accès réseau par `fopen` ou `file_get_contents` ; un contrôle automatique en CI interdit les URL dans ces fonctions. Le seul client HTTP est `curl`, enveloppé dans un service avec une liste d'hôtes autorisés (vide au MVP) | Le réglage du serveur reste On |
+| Taille des requêtes | Vérification de `Content-Length` et lecture plafonnée de `php://input` (64 Ko pour l'API) ; refus avec **413** | `post_max_size` reste à sa valeur de serveur |
+| Durée d'exécution | `set_time_limit(30)` pour le web ; les scripts en ligne de commande fixent leur propre limite | — |
+| `open_basedir` | Non appliqué (réglage partagé) | Défense en profondeur absente ; risque R1, accepté pour le portfolio |
+
+`bin/check-requirements.php` vérifie ces valeurs **effectives** au démarrage, avec `ini_get` et l'absence de l'en-tête.
 
 ### 6.4 MySQL et moindre privilège
 
@@ -656,18 +657,49 @@ Le registre détaillé sera tenu dans `docs/security/risk-register.md`. Les risq
 
 ---
 
-## 16. Actions d'infrastructure prévues : **aucune réalisée, chacune soumise à ton accord explicite**
+## 16. Actions d'infrastructure : état au 10/11/2026
 
-| # | Action | Où | Prérequis pour |
+Décision du 10/11/2026 : **MVP portfolio** (données fictives uniquement) d'un côté, **futur SaaS commercial** sur une autre infrastructure de l'autre. Aucune modification de la configuration globale de l'hébergement, ni des autres sites, bases ou emails.
+
+| # | Action | Décision | État |
 |---|---|---|---|
-| A1 | Activer l'extension `sodium` pour `agency-os.azzurra-pro.com` | hPanel ou API Hostinger | D3, D4, sauvegardes |
-| A2 | Durcir les options PHP du site (`expose_php`, `allow_url_fopen`, `log_errors`, tailles, `max_execution_time`, sessions, éventuellement `open_basedir`) | hPanel ou API | §6.3 |
-| A3 | Créer les tâches cron (ligne PHP toutes les 15 min, ligne shell de sauvegarde) | hPanel ou API | §4 du doc 05, §8 |
-| A4 | Vérifier les privilèges MySQL et la possibilité d'un second utilisateur ; créer la base de production (et celle de restauration) | hPanel | D10 |
-| A5 | Créer la boîte d'envoi SMTP (par exemple `no-reply@azzurra-pro.com`) | hPanel → Emails | D6, D9 |
-| A6 | Durcir DMARC de `azzurra-pro.com` : `p=none` avec `rua` (rapports) pendant 2 à 4 semaines, puis `p=quarantine`, puis éventuellement `p=reject`. ⚠️ **Concerne tous les emails du domaine**, et pas seulement Agency OS | DNS | R6 |
-| A7 | Choisir le fournisseur de stockage externe européen avec verrouillage d'objets, créer le bucket et les identifiants en écriture seule | fournisseur choisi | D5 |
-| A8 | Créer le sous-domaine `staging.agency-os…`, sa base, son utilisateur et son authentification HTTP | hPanel | D11 |
-| A9 | (seulement si le protocole D2 échoue) désactiver le CDN pour le sous-domaine | hPanel ou API | D2 |
+| A1 | Sodium | À faire maintenant, **uniquement sans impact sur les autres sites** | ⚠️ **Annulée après constat d'impact** (§17). Sodium est **désactivée**, comme à l'origine. Solutions possibles en §17.3, **en attente de ta décision** |
+| A2 | Réglages PHP de sécurité | À faire maintenant, **limités à Agency OS** | ⚠️ **Annulée pour la même raison.** Remplacée par un durcissement **par le code** (§6.3), sans impact externe |
+| A4 | Base MySQL dédiée | À faire maintenant | ✅ **Faite** : `u700770059_agencyos`, utilisateur `u700770059_agencyos`, rattachée à `agency-os.azzurra-pro.com`. Aucune autre base modifiée. Le mot de passe initial est **considéré comme exposé** (il figure dans l'historique de la session) : **il sera changé au premier déploiement**, et le nouveau sera écrit directement dans `config/.env` sur le serveur, sans transiter ailleurs. Privilèges constatés : tous les droits sur cette base uniquement (**R4**, accepté pour des données fictives) |
+| A3 | Cron | À préparer dans le code, **sans programmation sur Hostinger** | 🔧 `bin/cron.php` et les tâches seront développés et testés (tests automatisés et exécution manuelle). Ils ne seront pas programmés dans hPanel. **Conséquence pour le portfolio** : la purge de la démo repose sur la **purge de secours** (à chaque création de démo et à chaque requête d'une démo expirée), et les instantanés quotidiens n'existent pas en ligne. Le graphique d'évolution de la démo utilise des instantanés **fictifs** générés à sa création, marqués « Démo » |
+| A5 | Emails | À préparer dans le code, avec un mode test, **sans créer de boîte** | 🔧 `Mail\Mailer` avec les transports `smtp` (PHPMailer, non configuré), `capture` (par défaut sur le portfolio) et `null`. Aucune adresse n'est créée |
+| A7 | Sauvegardes externes | Architecture compatible, **sans souscription** | 🔧 Interface `BackupStorage`, avec une implémentation locale (tests) et une implémentation S3 prête mais inactive |
+| A6 | DMARC | Reporté au déploiement commercial | ⏸ (R6 reste ouvert, sans effet sur le portfolio, qui n'envoie aucun email) |
+| A8 | Préproduction | Reporté au déploiement commercial | ⏸ Les scans dynamiques du portfolio se feront **localement** (environnement de développement) |
+| A9 | CDN | Reporté, après analyse du futur hébergement | ⏸ Les en-têtes `no-store` et `private` restent en place |
 
-Les seules opérations réalisées sur Hostinger depuis le début du projet sont la **création du sous-domaine** (à ta demande) et des **lectures** : configuration PHP, SSL, CDN, bases, cron, DNS, en-têtes HTTP.
+---
+
+## 17. Journal des interventions sur l'hébergement
+
+| Date (UTC) | Intervention | Résultat |
+|---|---|---|
+| 10/11 04:36 | Création du sous-domaine `agency-os.azzurra-pro.com` (à ta demande) | ✅ |
+| 10/11 | Lectures seules : PHP, SSL, CDN, bases, cron, DNS, en-têtes | — |
+| 10/11 ≈05:40 | **A1 et A2** : activation de sodium et de 8 options de sécurité pour `agency-os.azzurra-pro.com` | ⚠️ **Impact constaté** : les mêmes réglages ont été appliqués aux autres sites **en PHP 8.3** (`azzurra-pro.com`, `apercu.azzurra-pro.com`, `amani-events.com`) |
+| 10/11 ≈05:42 | **Retour immédiat aux valeurs d'origine** (sodium désactivée ; `expose_php` On, `allow_url_fopen` On, `log_errors` Off, cookies de session non sécurisés, `use_strict_mode` Off, `samesite` None, `display_errors` Off) | ✅ Les **9 sites** ont été relus : configuration identique à l'état initial. Exposition aux réglages modifiés : **environ 2 minutes**. Les réglages appliqués étaient des **durcissements**, sans effet destructeur sur les données ; un effet de bord passager ne peut être exclu pendant cette fenêtre (par exemple, une extension WordPress utilisant `file_get_contents` sur une URL). Les sites en 8.2 n'ont pas été touchés |
+| 10/11 05:44 | **A4** : création de la base `u700770059_agencyos` | ✅ |
+
+### 17.1 Cause
+
+La documentation de l'API indiquait une modification « du site ». Une première comparaison entre deux sites avait montré des **options différentes**, mais c'était parce qu'ils utilisaient **des versions de PHP différentes** (8.3 et 8.2). La vérification aurait dû comparer deux sites **de même version** avant toute écriture.
+
+### 17.2 Mesure corrective
+
+Avant toute future modification de configuration, trois étapes seront suivies :
+1. identifier tous les sites qui partagent la portée du réglage ;
+2. relire leur configuration **avant** la modification ;
+3. ne modifier que si la portée est limitée à Agency OS.
+
+### 17.3 Options pour sodium (décision requise, rien n'est fait)
+
+| Option | Description | Impact sur les autres sites | Recommandation |
+|---|---|---|---|
+| **S1** | Passer **uniquement** `agency-os.azzurra-pro.com` en **PHP 8.4** (aucun autre site n'utilise cette version), puis activer sodium **dans le groupe 8.4**. Les réglages de sécurité de §6.3 pourraient alors aussi être appliqués dans hPanel | Aucun, **à condition** qu'aucun autre site ne passe en 8.4 plus tard. Ce point sera noté dans la documentation d'exploitation | ✅ **Recommandée**, après vérification que 8.4 est bien isolée (relecture des 9 sites avant et après) |
+| S2 | Ne pas utiliser sodium pour le portfolio : bcrypt (coût 12) pour les mots de passe, **AES-256-GCM via OpenSSL** (intégré) pour le chiffrement des champs, derrière la même interface `FieldCrypto`. Sodium serait réactivé sur l'hébergement commercial | Aucun | Acceptable, puisque les données sont fictives. Il faut alors maintenir deux implémentations testées de la même interface |
+| S3 | Bibliothèque `sodium_compat` (PHP pur) | Aucun | ❌ Nouvelle dépendance, lente, et pas d'Argon2id |
