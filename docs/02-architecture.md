@@ -147,6 +147,8 @@ Pendant le calcul, la dernière valeur reste affichée avec un indicateur discre
 
 ## 4. Sécurité
 
+> ⚠️ Cette section est **remplacée** par [04-securite.md](04-securite.md) dès sa validation. En cas de divergence, c'est 04 qui fait foi.
+
 | Sujet | Mise en œuvre |
 |---|---|
 | Mots de passe | `password_hash(PASSWORD_DEFAULT)` (bcrypt, ou argon2id si disponible) et `password_needs_rehash` à la connexion. 10 caractères minimum, contrôle contre une petite liste de mots de passe courants |
