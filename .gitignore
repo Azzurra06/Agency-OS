@@ -1,0 +1,25 @@
+# Dépendances
+/vendor/
+
+# Secrets : jamais dans Git (docs/04-securite.md §6.2)
+/config/.env
+/config/.env.*
+!/config/.env.example
+/config/keys/*
+!/config/keys/.gitkeep
+/config/*.cnf
+
+# Données d'exécution
+/storage/logs/*
+/storage/sessions/*
+/storage/mail-capture/*
+/storage/backups/*
+/storage/cache/*
+!/storage/**/.gitkeep
+/storage/maintenance.flag
+
+# Outils
+/.phpunit.cache/
+/.phpstan-cache/
+*.phar
+.DS_Store

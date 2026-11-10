@@ -1,0 +1,36 @@
+# Agency OS — seul répertoire servi. Code, configuration, journaux et sauvegardes sont hors de public_html.
+Options -Indexes -MultiViews
+ServerSignature Off
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    # HTTPS obligatoire
+    RewriteCond %{HTTPS} !=on
+    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+    # Fichiers cachés et sensibles : refusés
+    RewriteRule (^|/)\. - [F,L]
+    RewriteRule \.(sql|log|bak|env|ini|sh|md|lock|dist|cnf|key|yml|yaml|neon|phar|zip|gz)$ - [F,L,NC]
+    # Seuls index.php et assets/ sont servis tels quels ; tout le reste passe par le contrôleur frontal
+    RewriteCond %{REQUEST_URI} !^/assets/
+    RewriteRule ^ index.php [L,QSA]
+</IfModule>
+
+<FilesMatch "\.php$">
+    Require all denied
+</FilesMatch>
+<Files "index.php">
+    Require all granted
+</Files>
+
+<IfModule mod_headers.c>
+    Header always unset X-Powered-By
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set X-Frame-Options "DENY"
+    <FilesMatch "\.(css|js|woff2|svg|png)$">
+        Header set Cache-Control "public, max-age=604800"
+        Header set Cross-Origin-Resource-Policy "same-origin"
+    </FilesMatch>
+</IfModule>
+
+AddType font/woff2 .woff2

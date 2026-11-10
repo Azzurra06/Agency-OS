@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/11.5/phpunit.xsd"
+         bootstrap="tests/bootstrap.php"
+         colors="true"
+         cacheDirectory=".phpunit.cache"
+         failOnWarning="true"
+         failOnRisky="true"
+         failOnDeprecation="true"
+         beStrictAboutOutputDuringTests="true">
+    <testsuites>
+        <testsuite name="unit"><directory>tests/Unit</directory></testsuite>
+        <testsuite name="functional"><directory>tests/Functional</directory></testsuite>
+        <testsuite name="security"><directory>tests/Security</directory></testsuite>
+    </testsuites>
+    <source>
+        <include><directory>app</directory></include>
+        <exclude><directory>app/Views</directory></exclude>
+    </source>
+    <php>
+        <env name="TEST_DB_HOST" value="127.0.0.1"/>
+        <env name="TEST_DB_PORT" value="3306"/>
+        <env name="TEST_DB_NAME" value="agencyos_test"/>
+        <env name="TEST_DB_USER" value="agencyos_test"/>
+        <env name="TEST_DB_PASSWORD" value="test-only-password"/>
+    </php>
+</phpunit>

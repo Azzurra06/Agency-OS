@@ -50,8 +50,8 @@
 |---|---|---|---|
 | Phase 1 | Cadrage | `01-cadrage.md` | ✅ validé |
 | Phase 2 | Architecture, formules, sécurité, architecture détaillée | `02` à `05` | ✅ validé (S2 : OpenSSL pour le portfolio) |
-| **Phase 3** | **UX/UI** : design system, composants, écrans, états | `07-ux-ui.md` et **prototype statique** (`prototype/`) | ⏳ prototype à valider |
-| Phase 4, lot 0 | **Socle** : bootstrap et configuration, profils `portfolio`/`production`, PDO, migrations, `Decimal`, middlewares de sécurité (en-têtes, session, CSRF, authentification, contexte d'organisation, limitation des tentatives), dépôts restreints à l'organisation, `FieldCrypto`, journalisation, `Mailer` en capture, exécuteur cron, CI | code et tests | — |
+| Phase 3 | UX/UI : design system, composants, écrans, états, bulles d'information | `07-ux-ui.md` et prototype statique (`prototype/`) | ✅ validé |
+| **Phase 4, lot 0** | **Socle** : bootstrap et configuration, profils `portfolio`/`production`, PDO, migrations, `Decimal`, middlewares de sécurité (en-têtes, session, CSRF, authentification, contexte d'organisation, limitation des tentatives), dépôts restreints à l'organisation, `FieldCrypto`, journalisation, `Mailer` en capture, exécuteur cron, CI | code et tests (§5) | ⏳ livré, à valider |
 | Phase 4, lot 1 | Démo (création, quotas, expiration, purge), authentification complète (comptes de test), layout, dashboard squelette, profil et onboarding | — | — |
 | Phase 4, lot 2 | Diagnostic (questionnaire v1, scoring, résultats partiels) | — | — |
 | Phase 4, lot 3 | Pricing (simulateur, aperçus, finalisation, versions) | — | — |
@@ -60,3 +60,29 @@
 | Phase 4, lot 6 | Dashboard complet, historique, méthodologie, RGPD (export et suppression, utiles aux comptes de test), pages légales du portfolio | — | — |
 | Phase 5 | Tests de sécurité (locaux) ; déploiement **portfolio** sur Hostinger, avec ton accord pour chaque action ; checklist de mise en ligne du portfolio | runbooks et checklist | — |
 | **Plus tard** | **SaaS commercial** : choix de l'infrastructure isolée, A3, A5, A6, A7, A8 et A9, revue de sécurité complète, checklist « données réelles », documents RGPD définitifs, éventuellement facturation | — | ⏸ |
+
+## 5. Lot 0 : ce qui a été livré (10/11/2026)
+
+| Exigence | Mise en œuvre | Vérification |
+|---|---|---|
+| Calcul exact | `Support\Decimal` (BCMath, 12 décimales internes, arrondi unique moitié éloignée de zéro) | 20 tests, dont les cas limites de 03 §0.2 et PR-1 |
+| Profils | `Support\Config` refuse au démarrage : données réelles ou SMTP en portfolio, HTTP ou cookie non sécurisé en production, clé trop courte | 7 tests |
+| Isolation (niveaux 1 et 2) | organisation lue en session puis revérifiée en base à chaque requête ; `OrgScopedRepository` refuse toute requête sans `organization_id = :org` | tests de session falsifiée, d'époque révoquée, de démo expirée, de requête non restreinte |
+| CSRF | jeton de session et vérification de `Origin` | tests sans jeton, avec un faux jeton, avec une origine étrangère |
+| Authentification | compte actif, email vérifié, époque de session, permissions par rôle (refus par défaut), restrictions de la démo | 6 tests |
+| Sessions | réglages forcés par le code (cookie `__Host-`, `Secure`, `HttpOnly`, `SameSite=Lax`, mode strict), stockage dédié, expiration après 60 min d'inactivité ou 12 h, **aucune session pour une visite anonyme** | tests d'expiration et de minimisation ; vérification HTTP réelle |
+| En-têtes | CSP stricte avec Trusted Types, `nosniff`, `DENY`, COOP/CORP, `no-store`, HSTS en production, `noindex` hors production | test sur toutes les réponses, y compris les erreurs |
+| Erreurs | message générique et référence d'incident ; journal sans montant ni email | test avec une exception contenant un montant et un email |
+| Chiffrement des champs | `FieldCrypto` : AES-256-GCM (OpenSSL) ou XChaCha20-Poly1305 (sodium), clés versionnées hors base, AAD liant la valeur à la table, la colonne, l'organisation et la ligne | 18 tests de contrat sur les deux implémentations (altération, mauvaise clé, rotation, déplacement de valeur) |
+| Mots de passe | bcrypt coût 12 (Argon2id si disponible), refus au-delà de 72 octets | 4 tests |
+| Limitation des tentatives | fenêtre glissante, clés HMAC (aucune donnée en clair) | test de fenêtre, de casse et de purge |
+| Journal de sécurité | événements en liste blanche, contexte filtré, IP et user-agent haché, purge à 6 mois | 4 tests |
+| Validation | liste blanche des champs (mass assignment), décimaux en chaînes, pourcentages convertis par le serveur | 8 tests |
+| Emails (A5) | `Mailer` : capture par défaut (fichiers en 600), liste blanche, SMTP PHPMailer prêt mais interdit en portfolio | 3 tests |
+| Cron (A3) | `bin/cron.php` : une seule ligne cron, échéances en heure de Paris, anti-doublon, reprise après échec partiel, verrou, battement — **non programmé sur Hostinger** | 7 tests, dont les jours de changement d'heure |
+| Sauvegardes (A7) | interface `BackupStorage` et stockage local immuable ; stockage externe non souscrit | — |
+| Migrations | `0001_identity`, `0002_security` ; empreintes SHA-256 et détection d'une migration modifiée | 3 tests |
+| Fichiers exposés | seul `public_html/index.php` est un fichier PHP public ; `.htaccess` refuse fichiers cachés et sensibles ; `Require all denied` dans tous les autres répertoires | tests de structure |
+| Qualité | PHPStan **niveau max sans erreur** ; `tools/check-forbidden.php` (SQL concaténé, sinks XSS, sorties non échappées, fonctions dangereuses, aléa faible) | CI GitHub Actions : MariaDB 10.11 et MySQL 8.0, audit Composer, gitleaks |
+
+**Total : 118 tests, 1 027 assertions, tous verts en local** (PHP 8.3, MariaDB 10.11).

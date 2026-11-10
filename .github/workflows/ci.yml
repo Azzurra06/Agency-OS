@@ -1,0 +1,83 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    name: Tests (PHP ${{ matrix.php }}, ${{ matrix.db.name }})
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ["8.3"]
+        # Version de MySQL/MariaDB de Hostinger non confirmée : le schéma est testé sur les deux moteurs.
+        db:
+          - { name: "MariaDB 10.11", image: "mariadb:10.11" }
+          - { name: "MySQL 8.0", image: "mysql:8.0" }
+    services:
+      db:
+        image: ${{ matrix.db.image }}
+        env:
+          MYSQL_ROOT_PASSWORD: root-ci-only
+          MARIADB_ROOT_PASSWORD: root-ci-only
+          MYSQL_DATABASE: agencyos_test
+          MYSQL_USER: agencyos_test
+          MYSQL_PASSWORD: test-only-password
+        ports: ["3306:3306"]
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot-ci-only || healthcheck.sh --connect"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: bcmath, pdo_mysql, openssl, mbstring, sodium, intl
+          coverage: none
+          tools: composer:v2
+
+      - name: Valider composer.json
+        run: composer validate --strict
+
+      - name: Installer les dépendances (versions figées par composer.lock)
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Audit des dépendances (vulnérabilités connues)
+        run: composer audit --no-interaction
+
+      - name: Motifs interdits (SQL concaténé, sinks XSS, sorties non échappées…)
+        run: php tools/check-forbidden.php
+
+      - name: Analyse statique (PHPStan, niveau max)
+        run: vendor/bin/phpstan analyse --no-progress --memory-limit=1G
+
+      - name: Tests (unitaires, fonctionnels, sécurité)
+        env:
+          TEST_DB_HOST: 127.0.0.1
+          TEST_DB_PORT: "3306"
+          TEST_DB_NAME: agencyos_test
+          TEST_DB_USER: agencyos_test
+          TEST_DB_PASSWORD: test-only-password
+        run: vendor/bin/phpunit
+
+  secrets:
+    name: Recherche de secrets
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

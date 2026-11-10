@@ -1,0 +1,92 @@
+/* ==========================================================================
+   Agency OS — Design tokens
+   Source unique des couleurs, typographies, espacements, rayons et ombres.
+   Les composants n'utilisent jamais de valeur en dur.
+   ========================================================================== */
+
+/* Polices auto-hébergées (SIL OFL) — aucune ressource externe (CSP, RGPD) */
+@font-face { font-family: "Montserrat"; font-style: normal; font-weight: 500; font-display: swap; src: url("../fonts/montserrat-latin-500-normal.woff2") format("woff2"); }
+@font-face { font-family: "Montserrat"; font-style: normal; font-weight: 600; font-display: swap; src: url("../fonts/montserrat-latin-600-normal.woff2") format("woff2"); }
+@font-face { font-family: "Montserrat"; font-style: normal; font-weight: 700; font-display: swap; src: url("../fonts/montserrat-latin-700-normal.woff2") format("woff2"); }
+@font-face { font-family: "Poppins"; font-style: normal; font-weight: 400; font-display: swap; src: url("../fonts/poppins-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "Poppins"; font-style: normal; font-weight: 500; font-display: swap; src: url("../fonts/poppins-latin-500-normal.woff2") format("woff2"); }
+@font-face { font-family: "Poppins"; font-style: normal; font-weight: 600; font-display: swap; src: url("../fonts/poppins-latin-600-normal.woff2") format("woff2"); }
+
+:root {
+  /* Couleurs — fond blanc, accent indigo (contrastes WCAG AA vérifiés, voir docs/07-ux-ui.md §2.1) */
+  --color-bg: #FFFFFF;
+  --color-surface: #FFFFFF;
+  --color-surface-sunken: #F7F7F9;
+  --color-surface-muted: #F1F1F4;
+  --color-border: #E4E4E9;
+  --color-border-strong: #8C8C99;
+  --color-text: #17171C;
+  --color-text-secondary: #52525E;
+  --color-text-tertiary: #71717D;
+  --color-text-inverse: #FFFFFF;
+
+  --color-accent: #4F46E5;
+  --color-accent-hover: #4338CA;
+  --color-accent-subtle: #EEF0FF;
+  --color-accent-text: #4338CA;
+
+  --color-success: #15803D;
+  --color-success-subtle: #ECF8F0;
+  --color-warning: #A16207;
+  --color-warning-subtle: #FEF6E7;
+  --color-danger: #C42B2B;
+  --color-danger-subtle: #FDEEEE;
+  --color-info: #1D4ED8;
+  --color-info-subtle: #EAF1FF;
+
+  /* Natures de données (toujours associées à une icône et un libellé) */
+  --nature-declared-fg: #17171C;   --nature-declared-bg: #F1F1F4;
+  --nature-assumption-fg: #92400E; --nature-assumption-bg: #FEF6E7;
+  --nature-simulated-fg: #5B21B6;  --nature-simulated-bg: #F3EEFF;
+  --nature-calculated-fg: #1E40AF; --nature-calculated-bg: #EAF1FF;
+  --nature-frozen-fg: #334155;     --nature-frozen-bg: #EEF1F5;
+  --nature-demo-fg: #92400E;       --nature-demo-bg: #FEF6E7;
+
+  /* Séries de graphiques */
+  --chart-1: #4F46E5; --chart-2: #0F766E; --chart-3: #B45309; --chart-4: #64748B; --chart-5: #BE185D;
+  --chart-grid: #EDEDF1;
+
+  /* Typographie — Montserrat : titres et chiffres (chiffres tabulaires) ; Poppins : texte */
+  --font-heading: "Montserrat", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-body: "Poppins", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-numeric: "Montserrat", system-ui, sans-serif;
+
+  --text-display: 2.125rem;  --lh-display: 2.5rem;
+  --text-h1: 1.5rem;         --lh-h1: 2rem;
+  --text-h2: 1.125rem;       --lh-h2: 1.625rem;
+  --text-h3: 0.9375rem;      --lh-h3: 1.375rem;
+  --text-body: 0.875rem;     --lh-body: 1.375rem;
+  --text-small: 0.8125rem;   --lh-small: 1.125rem;
+  --text-micro: 0.75rem;     --lh-micro: 1rem;
+
+  /* Espacements (grille 4 px) */
+  --space-1: 4px;  --space-2: 8px;  --space-3: 12px; --space-4: 16px; --space-5: 20px;
+  --space-6: 24px; --space-7: 32px; --space-8: 40px; --space-9: 48px; --space-10: 64px;
+
+  /* Formes et élévation */
+  --radius-sm: 6px; --radius-md: 8px; --radius-lg: 12px; --radius-full: 999px;
+  --shadow-1: 0 1px 2px rgba(23, 23, 28, 0.05);
+  --shadow-2: 0 8px 24px rgba(23, 23, 28, 0.08);
+  --focus-ring: 0 0 0 2px #FFFFFF, 0 0 0 4px #4F46E5;
+
+  /* Mise en page */
+  --sidebar-width: 240px;
+  --sidebar-width-collapsed: 64px;
+  --content-max: 1200px;
+  --banner-height: 40px;
+  --tabbar-height: 64px;
+
+  /* Mouvement */
+  --duration-fast: 150ms;
+  --duration-base: 200ms;
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --duration-fast: 0ms; --duration-base: 0ms; }
+}

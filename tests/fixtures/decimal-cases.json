@@ -1,0 +1,12 @@
+{
+  "_source": "docs/03-formules-et-scoring.md §0.2 — cas limites de la politique de précision et d'arrondi",
+  "rounding": [
+    { "value": "2.675", "scale": 2, "expected": "2.68", "trap": "un flottant donne 2,67" },
+    { "value": "1.005", "scale": 2, "expected": "1.01", "trap": "un flottant donne 1,00" },
+    { "value": "0.125", "scale": 2, "expected": "0.13", "trap": "arrondi au pair (banquier)" },
+    { "value": "-2.345", "scale": 2, "expected": "-2.35", "trap": "sens de la moitié pour les négatifs" },
+    { "value": "-0.004", "scale": 2, "expected": "0.00", "trap": "pas de -0.00" },
+    { "value": "3970.588235294117", "scale": 2, "expected": "3970.59", "trap": "cas PR-1" },
+    { "value": "0.136250", "scale": 4, "expected": "0.1363", "trap": "taux à 4 décimales" }
+  ]
+}

@@ -1,0 +1,10 @@
+parameters:
+    level: max
+    paths:
+        - app
+        - bin
+        - public_html/index.php
+    excludePaths:
+        - app/Views
+    tmpDir: .phpstan-cache
+    treatPhpDocTypesAsCertain: false
