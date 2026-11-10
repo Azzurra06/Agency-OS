@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'self'; object-src 'none'; require-trusted-types-for 'script'">
+  <meta name="robots" content="noindex">
+  <title>Simulateur de prix · Agency OS (prototype)</title>
+  <link rel="stylesheet" href="assets/css/tokens.css">
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/components.css">
+  <link rel="stylesheet" href="assets/css/layout.css">
+  <link rel="stylesheet" href="assets/css/pages.css">
+  <script src="assets/js/proto.js" type="module"></script>
+</head>
+<body>
+  <a class="skip-link" href="#contenu">Aller au contenu</a>
+
+  <div class="demo-banner" role="region" aria-label="Mode démonstration">
+    <p class="demo-banner__text">
+      <svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/sprite.svg#i-flag"></use></svg>
+      <strong>Démonstration</strong> · données fictives<span class="hide-sm"> de l'agence « Lumen »</span> · expire dans <span class="num">23 h 12</span>
+    </p>
+    <div class="cluster demo-banner__actions">
+      <a class="btn btn--ghost btn--sm" href="#"><svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/sprite.svg#i-rotate-ccw"></use></svg><span class="btn__label">Réinitialiser</span></a>
+      <a class="btn btn--secondary btn--sm" href="#"><svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/sprite.svg#i-log-out"></use></svg><span class="btn__label">Quitter la démo</span></a>
+    </div>
+  </div>
+
+  <div class="app">
+    <aside class="sidebar" aria-label="Navigation principale">
+      <a class="brand" href="index.html"><span class="brand__mark" aria-hidden="true">AO</span><span class="brand__name">Agency OS</span></a>
+      <div class="org-switch"><span class="eyebrow">Agence</span><span class="org-switch__name">Lumen (démo)</span></div>
+      <nav class="nav">
+        <a class="nav__link" href="vue-ensemble.html"><svg class="icon" aria-hidden="true"><use href="assets/icons/sprite.svg#i-layout-dashboard"></use></svg><span class="nav__label">Vue d'ensemble</span></a>
+        <a class="nav__link" href="diagnostic.html"><svg class="icon" aria-hidden="true"><use href="assets/icons/sprite.svg#i-clipboard-check"></use></svg><span class="nav__label">Diagnostic</span></a>
+        <a class="nav__link" href="simulateur.html" aria-current="page"><svg class="icon" aria-hidden="true"><use href="assets/icons/sprite.svg#i-tag"></use></svg><span class="nav__label">Pricing</span></a>
+        <a class="nav__link" href="#"><svg class="icon" aria-hidden="true"><use href="assets/icons/sprite.svg#i-repeat"></use></svg><span class="nav__label">Revenus récurrents</span></a>
+        <a class="nav__link" href="#"><svg class="icon" aria-hidden="true"><use href="assets/icons/sprite.svg#i-target"></use></svg><span class="nav__label">Stratégie</span></a>
+      </nav>
+      <div class="sidebar__bottom">
+        <a class="nav__link" href="#"><svg class="icon" aria-hidden="true"><use href="assets/icons/sprite.svg#i-settings"></use></svg><span class="nav__label">Paramètres</span></a>
+      </div>
+    </aside>
+
+    <main class="main" id="contenu">
+      <div class="page page--with-summary">
+        <header class="page-header">
+          <div class="page-header__titles">
+            <p class="text-small text-secondary"><a href="#">Pricing</a> / Site vitrine</p>
+            <h1>Site vitrine · simulation</h1>
+            <p class="page-header__sub">Votre prix couvre-t-il vos coûts et votre marge cible ?</p>
+          </div>
+          <div class="cluster">
+            <button class="btn btn--secondary" type="button"><svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/sprite.svg#i-copy"></use></svg>Dupliquer</button>
+            <button class="btn btn--primary" type="button"><svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/sprite.svg#i-lock"></use></svg>Finaliser la simulation</button>
+          </div>
+        </header>
+
+        <div class="status-strip">
+          <span class="badge badge--outline">Brouillon · v4</span>
+          <span><strong>Sans effet sur la stratégie</strong> tant qu'il n'est pas finalisé.</span>
+          <span class="text-tertiary">Version active : <a href="#">v3, figée le 12/11/2026</a></span>
+        </div>
+
+        <div class="chips" data-toggle-group aria-label="Scénarios">
+          <button class="chip" type="button" aria-pressed="true"><svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/sprite.svg#i-star"></use></svg>Scénario A · référence</button>
+          <button class="chip" type="button" aria-pressed="false">Scénario B · design allégé</button>
+          <button class="chip chip--add" type="button" data-static="true"><svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/sprite.svg#i-plus"></use></svg>Scénario</button>
+          <button class="btn btn--ghost btn--sm" type="button">Comparer les scénarios</button>
+        </div>
+
+        <div class="sim-grid">
+          <form class="card" aria-labelledby="t-params">
+            <h2 id="t-params" class="visually-hidden">Paramètres du scénario A</h2>
+
+            <div class="form-section">
+              <div class="form-section__head">
+                <h3>Coût horaire</h3>
+                <span class="nature nature--assumption"><svg class="icon" aria-hidden="true"><use href="assets/icons/sprite.svg#i-lightbulb"></use></svg>Hypothèse</span>
+              </div>
+              <div class="segmented" role="radiogroup" aria-label="Origine du coût horaire">
+                <label><input type="radio" name="hc" value="profile">Suivre le profil (67,01 €/h)</label>
+                <label><input type="radio" name="hc" value="custom" checked>Personnalisé</label>
+              </div>
+              <div class="field">
+                <label class="field__label" for="hc">Coût horaire personnalisé</label>
+                <div class="input-affix"><input class="input num" id="hc" value="60,00" inputmode="decimal"><span class="input-affix__unit">€/h</span></div>
+                <p class="field__help">Le profil calcule 67,01 €/h, dont une hypothèse (taux de facturabilité de 65 %).</p>
+              </div>
+            </div>
+
+            <div class="form-section">
+              <div class="form-section__head">
+                <h3>Temps estimé</h3>
+                <button class="btn btn--ghost btn--sm" type="button"><svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/sprite.svg#i-file-text"></use></svg>Préremplir avec un modèle indicatif</button>
+              </div>
+              <table class="line-table">
+                <caption class="visually-hidden">Lignes de temps</caption>
+                <tbody>
+                  <tr><td><input class="input" aria-label="Phase" value="Cadrage"></td><td><div class="input-affix"><input class="input num" aria-label="Heures, cadrage" value="4" inputmode="decimal"><span class="input-affix__unit">h</span></div></td></tr>
+                  <tr><td><input class="input" aria-label="Phase" value="Design"></td><td><div class="input-affix"><input class="input num" aria-label="Heures, design" value="10" inputmode="decimal"><span class="input-affix__unit">h</span></div></td></tr>
+                  <tr><td><input class="input" aria-label="Phase" value="Développement"></td><td><div class="input-affix"><input class="input num" aria-label="Heures, développement" value="18" inputmode="decimal"><span class="input-affix__unit">h</span></div></td></tr>
+                  <tr><td><input class="input" aria-label="Phase" value="Contenus et recette"></td><td><div class="input-affix"><input class="input num" aria-label="Heures, contenus et recette" value="6" inputmode="decimal"><span class="input-affix__unit">h</span></div></td></tr>
+                  <tr><td><input class="input" aria-label="Phase" value="Gestion de projet"></td><td><div class="input-affix"><input class="input num" aria-label="Heures, gestion de projet" value="2" inputmode="decimal"><span class="input-affix__unit">h</span></div></td></tr>
+                </tbody>
+              </table>
+              <div class="line-total"><button class="btn btn--ghost btn--sm" type="button"><svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/sprite.svg#i-plus"></use></svg>Ajouter une phase</button><span>Total <span class="num">40 h</span></span></div>
+            </div>
+
+            <div class="form-section">
+              <div class="form-section__head"><h3>Frais directs du projet</h3></div>
+              <table class="line-table">
+                <caption class="visually-hidden">Frais directs</caption>
+                <tbody>
+                  <tr><td><input class="input" aria-label="Libellé du frais" value="Thème premium"></td><td><div class="input-affix"><input class="input num" aria-label="Montant, thème premium" value="300,00" inputmode="decimal"><span class="input-affix__unit">€</span></div></td></tr>
+                </tbody>
+              </table>
+              <div class="line-total"><button class="btn btn--ghost btn--sm" type="button"><svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/sprite.svg#i-plus"></use></svg>Ajouter un frais</button><span>Total <span class="num">300,00 €</span></span></div>
+            </div>
+
+            <div class="form-section">
+              <div class="two-col">
+                <div class="field">
+                  <label class="field__label" for="margin">Marge cible sur prix de vente <span class="nature nature--assumption"><svg class="icon" aria-hidden="true"><use href="assets/icons/sprite.svg#i-lightbulb"></use></svg>Hypothèse</span></label>
+                  <div class="input-affix"><input class="input num" id="margin" value="30,00" inputmode="decimal"><span class="input-affix__unit">%</span></div>
+                </div>
+                <div class="field">
+                  <label class="field__label" for="contingency">Provision pour aléas</label>
+                  <div class="input-affix"><input class="input num" id="contingency" value="0,00" inputmode="decimal"><span class="input-affix__unit">%</span></div>
+                </div>
+                <div class="field">
+                  <label class="field__label" for="price">Prix testé <span class="nature nature--declared"><svg class="icon" aria-hidden="true"><use href="assets/icons/sprite.svg#i-pencil"></use></svg>Prix actuel</span></label>
+                  <div class="input-affix"><input class="input num" id="price" value="3 200,00" inputmode="decimal"><span class="input-affix__unit">€</span></div>
+                </div>
+                <div class="field">
+                  <span class="field__label">Charges variables générales</span>
+                  <p class="num">2,00 % du prix <span class="nature nature--calculated"><svg class="icon" aria-hidden="true"><use href="assets/icons/sprite.svg#i-square-function"></use></svg>Calculé</span></p>
+                  <p class="field__help">Issu du profil : exercice 2025, 12 mois.</p>
+                </div>
+              </div>
+              <p class="alert alert--neutral"><svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/sprite.svg#i-info"></use></svg><span>Valeurs fictives de démonstration. N'indiquez pas les chiffres réels de votre entreprise.</span></p>
+            </div>
+          </form>
+
+          <aside class="card sim-results" aria-labelledby="t-results">
+            <div class="card__header">
+              <div class="card__title"><h2 id="t-results">Résultats</h2><span class="nature nature--simulated"><svg class="icon" aria-hidden="true"><use href="assets/icons/sprite.svg#i-chart-spline"></use></svg>Simulé</span></div>
+              <span class="inline-status inline-status--ok" aria-live="polite"><svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/sprite.svg#i-check"></use></svg>À jour</span>
+            </div>
+            <div class="result-list">
+              <div class="result-line"><span class="result-line__label">Coût direct et de structure</span><span class="result-line__value">2 700,00 €</span></div>
+              <div class="result-line"><span class="result-line__label">Prix plancher <span class="tip"><button class="info-btn" type="button" aria-describedby="tip-floor"><svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/sprite.svg#i-info"></use></svg><span class="visually-hidden">Définition</span></button><span class="tip__content" role="tooltip" id="tip-floor"><strong>Prix plancher</strong>Prix en dessous duquel la prestation fait perdre de l'argent, une fois tous les coûts couverts.</span></span></span><span class="result-line__value">2 755,10 €</span></div>
+              <div class="result-line result-line--key"><span class="result-line__label"><svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/sprite.svg#i-star"></use></svg>Prix recommandé</span><span class="result-line__value">3 970,59 €</span></div>
+              <p class="text-small text-tertiary">Arrondi commercial proposé : <span class="num">3 980 €</span></p>
+            </div>
+            <hr class="divider">
+            <div class="stack stack--sm">
+              <p class="eyebrow">Au prix testé de <span class="num">3 200,00 €</span></p>
+              <div class="result-list">
+                <div class="result-line"><span class="result-line__label">Coût de revient complet</span><span class="result-line__value">2 764,00 €</span></div>
+                <div class="result-line"><span class="result-line__label">Résultat</span><span class="result-line__value">436,00 €</span></div>
+                <div class="result-line"><span class="result-line__label">Marge sur prix de vente <span class="tip"><button class="info-btn" type="button" aria-describedby="tip-margin"><svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/sprite.svg#i-info"></use></svg><span class="visually-hidden">Définition</span></button><span class="tip__content" role="tooltip" id="tip-margin"><strong>Marge sur prix de vente</strong>Résultat ÷ prix de vente. À ne pas confondre avec la majoration sur coût.</span></span></span><span class="result-line__value">13,6 %</span></div>
+                <div class="result-line"><span class="result-line__label">Majoration sur coût <span class="tip"><button class="info-btn" type="button" aria-describedby="tip-markup"><svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/sprite.svg#i-info"></use></svg><span class="visually-hidden">Définition</span></button><span class="tip__content" role="tooltip" id="tip-markup"><strong>Majoration sur coût</strong>Résultat ÷ coût de revient. Une majoration de 50 % donne une marge sur prix de vente de 33,3 %.</span></span></span><span class="result-line__value">15,8 %</span></div>
+              </div>
+            </div>
+            <div class="alert alert--warning" role="status">
+              <svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/sprite.svg#i-triangle-alert"></use></svg>
+              <div><p class="alert__title">19,4 % sous le prix recommandé</p><p>La marge obtenue (13,6 %) est inférieure à votre marge cible (30 %).</p></div>
+            </div>
+            <button class="btn btn--ghost btn--sm" type="button"><svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/sprite.svg#i-square-function"></use></svg>Comment est-ce calculé ?</button>
+          </aside>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div class="mobile-summary" aria-hidden="true">
+    <div><p class="text-micro text-secondary">Prix recommandé</p><p class="num">3 970,59 €</p></div>
+    <div><p class="text-micro text-secondary">Marge au prix testé</p><p class="num text-warning">13,6 %</p></div>
+  </div>
+
+  <nav class="tabbar" aria-label="Navigation principale">
+    <a class="tabbar__link" href="vue-ensemble.html"><svg class="icon" aria-hidden="true"><use href="assets/icons/sprite.svg#i-layout-dashboard"></use></svg>Vue</a>
+    <a class="tabbar__link" href="diagnostic.html"><svg class="icon" aria-hidden="true"><use href="assets/icons/sprite.svg#i-clipboard-check"></use></svg>Diagnostic</a>
+    <a class="tabbar__link" href="simulateur.html" aria-current="page"><svg class="icon" aria-hidden="true"><use href="assets/icons/sprite.svg#i-tag"></use></svg>Pricing</a>
+    <a class="tabbar__link" href="#"><svg class="icon" aria-hidden="true"><use href="assets/icons/sprite.svg#i-repeat"></use></svg>Récurrent</a>
+    <a class="tabbar__link" href="#"><svg class="icon" aria-hidden="true"><use href="assets/icons/sprite.svg#i-target"></use></svg>Stratégie</a>
+  </nav>
+</body>
+</html>

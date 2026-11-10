@@ -18,6 +18,7 @@
 | Cron | Scripts développés et testés, **non programmés** ; purge de la démo à la volée | Programmés (instantanés, purges, sauvegardes, alertes) |
 | Sauvegardes | Inutiles pour des démos éphémères ; la base peut être recréée par les migrations et le jeu de démo | N2 chiffrées et N3 externes européennes immuables |
 | Durcissement PHP | Par le code (04 §6.3) | Par le code **et** la configuration du serveur |
+| Cryptographie | OpenSSL (AES-256-GCM, RSA-OAEP) et bcrypt (S2) | libsodium (XChaCha20-Poly1305) et Argon2id |
 | Préproduction | Environnement local de développement | Sous-domaine isolé (D11) |
 | Sécurité du code | **Complète** : authentification, sessions, autorisations, isolation, validation, CSRF, XSS, SQL, secrets, chiffrement des champs | Identique, avec en plus la revue et le scan dynamique sur la préproduction |
 
@@ -48,8 +49,8 @@
 | Étape | Contenu | Livrable | Statut |
 |---|---|---|---|
 | Phase 1 | Cadrage | `01-cadrage.md` | ✅ validé |
-| Phase 2 | Architecture, formules, sécurité, architecture détaillée | `02` à `05` | ✅ validé (sauf la décision S1 ou S2 sur sodium) |
-| **Phase 3** | **UX/UI** : design system, composants, écrans, états | `07-ux-ui.md` et, si tu le souhaites, un **prototype statique** du design system | ⏳ en cours |
+| Phase 2 | Architecture, formules, sécurité, architecture détaillée | `02` à `05` | ✅ validé (S2 : OpenSSL pour le portfolio) |
+| **Phase 3** | **UX/UI** : design system, composants, écrans, états | `07-ux-ui.md` et **prototype statique** (`prototype/`) | ⏳ prototype à valider |
 | Phase 4, lot 0 | **Socle** : bootstrap et configuration, profils `portfolio`/`production`, PDO, migrations, `Decimal`, middlewares de sécurité (en-têtes, session, CSRF, authentification, contexte d'organisation, limitation des tentatives), dépôts restreints à l'organisation, `FieldCrypto`, journalisation, `Mailer` en capture, exécuteur cron, CI | code et tests | — |
 | Phase 4, lot 1 | Démo (création, quotas, expiration, purge), authentification complète (comptes de test), layout, dashboard squelette, profil et onboarding | — | — |
 | Phase 4, lot 2 | Diagnostic (questionnaire v1, scoring, résultats partiels) | — | — |

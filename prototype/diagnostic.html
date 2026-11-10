@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'self'; object-src 'none'; require-trusted-types-for 'script'">
+  <meta name="robots" content="noindex">
+  <title>Diagnostic · Agency OS (prototype)</title>
+  <link rel="stylesheet" href="assets/css/tokens.css">
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/components.css">
+  <link rel="stylesheet" href="assets/css/layout.css">
+  <link rel="stylesheet" href="assets/css/pages.css">
+  <script src="assets/js/proto.js" type="module"></script>
+</head>
+<body>
+  <a class="skip-link" href="#contenu">Aller au contenu</a>
+
+  <div class="demo-banner" role="region" aria-label="Mode démonstration">
+    <p class="demo-banner__text">
+      <svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/sprite.svg#i-flag"></use></svg>
+      <strong>Démonstration</strong> · données fictives<span class="hide-sm"> de l'agence « Lumen »</span> · expire dans <span class="num">23 h 12</span>
+    </p>
+    <div class="cluster demo-banner__actions">
+      <a class="btn btn--ghost btn--sm" href="#"><svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/sprite.svg#i-rotate-ccw"></use></svg><span class="btn__label">Réinitialiser</span></a>
+      <a class="btn btn--secondary btn--sm" href="#"><svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/sprite.svg#i-log-out"></use></svg><span class="btn__label">Quitter la démo</span></a>
+    </div>
+  </div>
+
+  <div class="app">
+    <aside class="sidebar" aria-label="Navigation principale">
+      <a class="brand" href="index.html"><span class="brand__mark" aria-hidden="true">AO</span><span class="brand__name">Agency OS</span></a>
+      <div class="org-switch"><span class="eyebrow">Agence</span><span class="org-switch__name">Lumen (démo)</span></div>
+      <nav class="nav">
+        <a class="nav__link" href="vue-ensemble.html"><svg class="icon" aria-hidden="true"><use href="assets/icons/sprite.svg#i-layout-dashboard"></use></svg><span class="nav__label">Vue d'ensemble</span></a>
+        <a class="nav__link" href="diagnostic.html" aria-current="page"><svg class="icon" aria-hidden="true"><use href="assets/icons/sprite.svg#i-clipboard-check"></use></svg><span class="nav__label">Diagnostic</span></a>
+        <a class="nav__link" href="simulateur.html"><svg class="icon" aria-hidden="true"><use href="assets/icons/sprite.svg#i-tag"></use></svg><span class="nav__label">Pricing</span></a>
+        <a class="nav__link" href="#"><svg class="icon" aria-hidden="true"><use href="assets/icons/sprite.svg#i-repeat"></use></svg><span class="nav__label">Revenus récurrents</span></a>
+        <a class="nav__link" href="#"><svg class="icon" aria-hidden="true"><use href="assets/icons/sprite.svg#i-target"></use></svg><span class="nav__label">Stratégie</span></a>
+      </nav>
+      <div class="sidebar__bottom">
+        <a class="nav__link" href="#"><svg class="icon" aria-hidden="true"><use href="assets/icons/sprite.svg#i-settings"></use></svg><span class="nav__label">Paramètres</span></a>
+      </div>
+    </aside>
+
+    <main class="main" id="contenu">
+      <div class="page">
+        <header class="page-header">
+          <div class="page-header__titles">
+            <p class="eyebrow">Diagnostic de maturité · questionnaire v1</p>
+            <h1>Rentabilité et pilotage financier</h1>
+            <p class="page-header__sub">Dimension 3 sur 6 · question 1 sur 5 · environ 10 minutes au total</p>
+          </div>
+          <span class="inline-status inline-status--ok" aria-live="polite"><svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/sprite.svg#i-check"></use></svg>Enregistré à 10:42</span>
+        </header>
+
+        <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="30" aria-valuenow="10" aria-label="Progression du diagnostic : 10 questions sur 30"><span class="progress__bar" data-value="33"></span></div>
+
+        <div class="diag-grid">
+          <aside class="diag-aside" aria-label="Étapes du diagnostic">
+            <ol class="steps">
+              <li data-state="done"><span class="steps__dot" aria-hidden="true">✓</span><span class="steps__label">Positionnement et offres</span></li>
+              <li data-state="done"><span class="steps__dot" aria-hidden="true">✓</span><span class="steps__label">Acquisition et commercial</span></li>
+              <li aria-current="step"><span class="steps__dot" aria-hidden="true">3</span><span class="steps__label">Rentabilité et pilotage</span></li>
+              <li><span class="steps__dot" aria-hidden="true">4</span><span class="steps__label">Organisation et processus</span></li>
+              <li><span class="steps__dot" aria-hidden="true">5</span><span class="steps__label">Fidélisation et récurrent</span></li>
+              <li><span class="steps__dot" aria-hidden="true">6</span><span class="steps__label">Stratégie et développement</span></li>
+            </ol>
+            <p class="alert alert--neutral"><svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/sprite.svg#i-info"></use></svg><span>Autoévaluation indicative. Ce n'est ni une certification ni un diagnostic financier officiel. <a href="#">Méthodologie</a></span></p>
+          </aside>
+
+          <form class="card stack stack--lg" aria-label="Question 1 de la dimension Rentabilité et pilotage financier">
+            <fieldset class="question">
+              <legend>Comment fixez-vous le prix de vos prestations ?</legend>
+              <label class="radio-card"><input type="radio" name="q" value="feeling"><span class="stack stack--sm"><span class="radio-card__title">Au feeling ou en fonction des concurrents</span></span></label>
+              <label class="radio-card"><input type="radio" name="q" value="time"><span class="stack stack--sm"><span class="radio-card__title">À partir du temps estimé</span><span class="radio-card__desc">Sans coût horaire calculé.</span></span></label>
+              <label class="radio-card"><input type="radio" name="q" value="cost" checked><span class="stack stack--sm"><span class="radio-card__title">À partir du temps et d'un coût horaire calculé</span><span class="radio-card__desc">Le coût horaire tient compte de vos charges et de votre temps facturable.</span></span></label>
+              <label class="radio-card"><input type="radio" name="q" value="full"><span class="stack stack--sm"><span class="radio-card__title">Coût complet, marge cible et suivi de la rentabilité réelle</span><span class="radio-card__desc">Vous comparez ensuite le temps réel au temps vendu.</span></span></label>
+              <label class="radio-card radio-card--muted"><input type="radio" name="q" value="unknown"><span class="stack stack--sm"><span class="radio-card__title">Je ne sais pas</span></span></label>
+              <p class="question__note"><svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/sprite.svg#i-circle-help"></use></svg><span>Pour cette question, « Je ne sais pas » est une réponse <strong>inconnue</strong> : elle ne compte pas dans le score, mais elle réduit sa fiabilité.</span></p>
+            </fieldset>
+
+            <div class="diag-nav">
+              <a class="btn btn--secondary" href="#"><svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/sprite.svg#i-chevron-left"></use></svg>Précédent</a>
+              <a class="btn btn--primary" href="#">Question suivante<svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/sprite.svg#i-chevron-right"></use></svg></a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <nav class="tabbar" aria-label="Navigation principale">
+    <a class="tabbar__link" href="vue-ensemble.html"><svg class="icon" aria-hidden="true"><use href="assets/icons/sprite.svg#i-layout-dashboard"></use></svg>Vue</a>
+    <a class="tabbar__link" href="diagnostic.html" aria-current="page"><svg class="icon" aria-hidden="true"><use href="assets/icons/sprite.svg#i-clipboard-check"></use></svg>Diagnostic</a>
+    <a class="tabbar__link" href="simulateur.html"><svg class="icon" aria-hidden="true"><use href="assets/icons/sprite.svg#i-tag"></use></svg>Pricing</a>
+    <a class="tabbar__link" href="#"><svg class="icon" aria-hidden="true"><use href="assets/icons/sprite.svg#i-repeat"></use></svg>Récurrent</a>
+    <a class="tabbar__link" href="#"><svg class="icon" aria-hidden="true"><use href="assets/icons/sprite.svg#i-target"></use></svg>Stratégie</a>
+  </nav>
+</body>
+</html>

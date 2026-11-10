@@ -1,6 +1,6 @@
 # Agency OS — Phase 3 : UX/UI
 
-> Statut : **proposition, en attente de validation**.
+> Statut : **orientations validées le 10/11/2026** (§9) ; prototype statique dans [`prototype/`](../prototype/README.md).
 > Contraintes héritées :
 > - HTML, CSS et JavaScript natifs, sans framework ;
 > - **CSP stricte**, sans style ni script en ligne (04 §5) ;
@@ -31,9 +31,9 @@ Tous les tokens sont des **variables CSS** (`assets/css/tokens.css`). Les compos
 
 | Token | Valeur | Usage | Contraste |
 |---|---|---|---|
-| `--color-bg` | `#F7F7F9` | fond de l'application (gris très clair, légèrement froid) | — |
+| `--color-bg` | `#FFFFFF` | fond de l'application (**blanc**, décision du 10/11/2026) | — |
 | `--color-surface` | `#FFFFFF` | cartes, panneaux, champs | — |
-| `--color-surface-sunken` | `#F1F1F4` | zones secondaires, en-têtes de tableau | — |
+| `--color-surface-sunken` | `#F7F7F9` | zones en retrait (panneaux secondaires, en-têtes de tableau) : sur fond blanc, la hiérarchie repose sur les bordures et ces zones | — |
 | `--color-border` | `#E4E4E9` | séparateurs, contours de cartes (décoratifs) | — |
 | `--color-border-strong` | `#8C8C99` | contours des **champs de formulaire** | 3,3:1 sur le blanc ✅ (minimum 3:1 pour les éléments d'interface) |
 | `--color-text` | `#17171C` | texte principal | 16,7:1 ✅ |
@@ -60,23 +60,26 @@ Couleurs des **natures de données** : chaque badge combine toujours **une icôn
 
 Mode sombre : **hors MVP**. Les tokens sont prévus pour l'ajouter par simple redéfinition des variables.
 
-### 2.2 Typographie
+### 2.2 Typographie (décision du 10/11/2026 : Montserrat et Poppins)
 
-- **Inter** (licence SIL OFL), **auto-hébergée** en police variable WOFF2 avec sous-ensemble latin. Pas de Google Fonts (CSP et RGPD). Repli : `system-ui, -apple-system, "Segoe UI", Roboto, sans-serif`.
-- **Chiffres tabulaires** (`font-variant-numeric: tabular-nums`) dans tous les montants, tableaux et KPI, pour que les colonnes restent alignées.
-- Échelle (taille / interligne / graisse) :
+- **Montserrat** : titres **et tous les chiffres** (KPI, montants, tableaux, résultats). Elle dispose de **chiffres tabulaires** (`tnum`, vérifié dans le fichier de police), donc les colonnes de montants restent alignées.
+- **Poppins** : texte courant, libellés, boutons. **Poppins n'a pas de chiffres à largeur fixe** (vérifié : 9 largeurs de chiffres différentes, aucune fonction `tnum`). Elle n'est donc **jamais** utilisée pour afficher des montants : la classe `.num` impose Montserrat.
+- Les deux polices sont **auto-hébergées** (WOFF2, sous-ensemble latin, licence SIL OFL) : pas de Google Fonts (CSP, RGPD). Graisses chargées : Montserrat 500, 600 et 700 ; Poppins 400, 500 et 600.
+- Repli : `system-ui, -apple-system, "Segoe UI", Roboto, sans-serif`.
+- Échelle :
 
-| Token | Usage | Taille | Interligne | Graisse |
-|---|---|---|---|---|
-| `--text-display` | valeur du KPI principal | 36 px | 40 | 600 |
-| `--text-h1` | titre de page | 24 px | 32 | 600 |
-| `--text-h2` | titre de section | 18 px | 26 | 600 |
-| `--text-h3` | titre de carte | 15 px | 22 | 600 |
-| `--text-body` | texte courant, champs | 14 px | 22 | 400 |
-| `--text-small` | aide, métadonnées | 13 px | 18 | 400 |
-| `--text-micro` | badges, étiquettes | 12 px | 16 | 500, avec un léger espacement des lettres |
+| Token | Usage | Police | Taille | Interligne | Graisse |
+|---|---|---|---|---|---|
+| `--text-display` | valeur du KPI principal | Montserrat | 34 px | 40 | 700 |
+| `--text-h1` | titre de page | Montserrat | 24 px | 32 | 700 |
+| `--text-h2` | titre de section | Montserrat | 18 px | 26 | 600 |
+| `--text-h3` | titre de carte | Montserrat | 15 px | 22 | 600 |
+| `--text-body` | texte courant, champs | Poppins | 14 px | 22 | 400 |
+| `--text-small` | aide, métadonnées | Poppins | 13 px | 18 | 400 |
+| `--text-micro` | badges, étiquettes | Poppins | 12 px | 16 | 500 |
 
-- Sur mobile, le corps de texte passe à **16 px** dans les champs, pour éviter le zoom automatique d'iOS.
+- Sur mobile, les champs passent à **16 px**, pour éviter le zoom automatique d'iOS.
+- Espaces insécables dans les nombres (espace fine entre les milliers, insécable avant `€`, `%`, `h`), pour qu'un montant ne soit jamais coupé en fin de ligne.
 
 ### 2.3 Espacements, formes et élévation
 
@@ -376,12 +379,14 @@ Agence · Finances (avec **Historique des modifications**) · Prestations · Com
 
 ---
 
-## 9. Décisions à valider
+## 9. Décisions (10/11/2026)
 
-1. **Palette** : fond `#F7F7F9`, accent **indigo `#4F46E5`**, couleurs de statut et de nature du §2.1.
-2. **Typographie** : Inter auto-hébergée, chiffres tabulaires, corps de 14 px sur desktop et 16 px dans les champs sur mobile.
-3. **Icônes** : sous-ensemble de Lucide en sprite SVG local (fichier statique).
-4. **Vue d'ensemble** : 3 KPI principaux (résultat estimé, maturité, MRR contractualisé), puis l'objectif, les priorités, le plan et l'évolution. **Le CA et les charges ne sont pas des cartes à part** : ils apparaissent dans le détail du résultat.
-5. **Revenus récurrents** : séparation visuelle stricte entre « Réel » et « Prévisionnel ».
-6. **Mode sombre** hors MVP.
-7. **Livrable suivant de la phase 3** : un **prototype statique du design system** en HTML et CSS (tokens, composants et 3 écrans clés : Vue d'ensemble, Simulateur, Question du diagnostic), avec des données fictives. Il servirait de validation visuelle et de base réutilisable par le développement.
+| # | Sujet | Décision |
+|---|---|---|
+| 1 | Palette | **Fond blanc**, **accent indigo `#4F46E5`** ; couleurs de statut et de nature du §2.1 |
+| 2 | Typographie | **Montserrat** (titres et chiffres) et **Poppins** (texte), auto-hébergées (§2.2) |
+| 3 | Icônes | Sous-ensemble de Lucide en sprite SVG local (38 icônes) |
+| 4 | Vue d'ensemble | 3 KPI principaux, puis objectif, priorités, plan et évolution (proposition retenue dans le prototype) |
+| 5 | Récurrent | Séparation stricte entre « Réel » et « Prévisionnel » |
+| 6 | Mode sombre | Hors MVP |
+| 7 | Prototype statique | **Réalisé** : [`prototype/`](../prototype/README.md) |

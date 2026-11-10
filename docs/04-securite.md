@@ -333,7 +333,7 @@ Restent en clair (moins sensibles, et nécessaires aux contraintes de base) : id
 **Service unique `Security\FieldCrypto`**
 - Aucun autre code n'appelle libsodium pour les données.
 - Les dépôts déclarent leurs colonnes chiffrées (`'revenue' => Encrypted::decimal()`). La conversion se fait **uniquement** dans la couche d'accès aux données, de façon transparente pour les services.
-- Algorithme : `sodium_crypto_aead_xchacha20poly1305_ietf_encrypt` ; nonce aléatoire de 24 octets par valeur.
+- Algorithme : `sodium_crypto_aead_xchacha20poly1305_ietf_encrypt` (SaaS commercial), nonce aléatoire de 24 octets par valeur. **MVP portfolio : AES-256-GCM via OpenSSL** (décision S2, §17.4), derrière la même interface.
 - **Données associées (AAD)** = `table|colonne|organization_id|public_id de la ligne|version de clé`. Un chiffré déplacé vers une autre ligne ou une autre organisation **échoue au déchiffrement**, ce qui est journalisé comme un incident d'intégrité.
 - Format stocké : `k<version>:` + base64(nonce ‖ chiffré ‖ tag).
 - Un échec de déchiffrement n'est **jamais** remplacé silencieusement par 0 ou NULL : il lève une exception et produit une erreur 500 avec une référence d'incident.
@@ -602,7 +602,7 @@ L'utilisateur voit ses **10 dernières connexions** (date, appareil approximatif
 |---|---|---|
 | PHP ≥ 8.2 | ✅ 8.3.36 | — |
 | `bcmath`, `intl`, `mbstring`, `pdo_mysql`, `openssl`, `curl` | ✅ actifs | — |
-| `sodium` | ⏳ disponible, **désactivée** | Argon2id, chiffrement des champs, scellement des sauvegardes (A1) |
+| `sodium` | désactivée ; **non requise pour le portfolio** (décision S2) | Requise sur l'hébergement commercial |
 | Cron (ligne PHP toutes les 15 min, ligne shell quotidienne) | ✅ disponible, rien de configuré | Démo, instantanés, sauvegardes, alertes (A3) |
 | SSH | ❓ à vérifier | Migrations, tests de restauration (sinon phpMyAdmin, ce qui est moins sûr et plus lent) |
 | Version de MySQL ou MariaDB | ❓ à vérifier | Colonne générée UNIQUE (une simulation active par prestation), `CHECK`, JSON |
@@ -663,7 +663,7 @@ Décision du 10/11/2026 : **MVP portfolio** (données fictives uniquement) d'un 
 
 | # | Action | Décision | État |
 |---|---|---|---|
-| A1 | Sodium | À faire maintenant, **uniquement sans impact sur les autres sites** | ⚠️ **Annulée après constat d'impact** (§17). Sodium est **désactivée**, comme à l'origine. Solutions possibles en §17.3, **en attente de ta décision** |
+| A1 | Sodium | À faire maintenant, **uniquement sans impact sur les autres sites** | ⚠️ Annulée après constat d'impact (§17). **Décision S2 (10/11/2026)** : pas de sodium pour le portfolio ; OpenSSL et bcrypt (§17.3) |
 | A2 | Réglages PHP de sécurité | À faire maintenant, **limités à Agency OS** | ⚠️ **Annulée pour la même raison.** Remplacée par un durcissement **par le code** (§6.3), sans impact externe |
 | A4 | Base MySQL dédiée | À faire maintenant | ✅ **Faite** : `u700770059_agencyos`, utilisateur `u700770059_agencyos`, rattachée à `agency-os.azzurra-pro.com`. Aucune autre base modifiée. Le mot de passe initial est **considéré comme exposé** (il figure dans l'historique de la session) : **il sera changé au premier déploiement**, et le nouveau sera écrit directement dans `config/.env` sur le serveur, sans transiter ailleurs. Privilèges constatés : tous les droits sur cette base uniquement (**R4**, accepté pour des données fictives) |
 | A3 | Cron | À préparer dans le code, **sans programmation sur Hostinger** | 🔧 `bin/cron.php` et les tâches seront développés et testés (tests automatisés et exécution manuelle). Ils ne seront pas programmés dans hPanel. **Conséquence pour le portfolio** : la purge de la démo repose sur la **purge de secours** (à chaque création de démo et à chaque requête d'une démo expirée), et les instantanés quotidiens n'existent pas en ligne. Le graphique d'évolution de la démo utilise des instantanés **fictifs** générés à sa création, marqués « Démo » |
@@ -696,10 +696,21 @@ Avant toute future modification de configuration, trois étapes seront suivies :
 2. relire leur configuration **avant** la modification ;
 3. ne modifier que si la portée est limitée à Agency OS.
 
-### 17.3 Options pour sodium (décision requise, rien n'est fait)
+### 17.3 Options pour sodium : **décision S2 retenue le 10/11/2026**
 
 | Option | Description | Impact sur les autres sites | Recommandation |
 |---|---|---|---|
 | **S1** | Passer **uniquement** `agency-os.azzurra-pro.com` en **PHP 8.4** (aucun autre site n'utilise cette version), puis activer sodium **dans le groupe 8.4**. Les réglages de sécurité de §6.3 pourraient alors aussi être appliqués dans hPanel | Aucun, **à condition** qu'aucun autre site ne passe en 8.4 plus tard. Ce point sera noté dans la documentation d'exploitation | ✅ **Recommandée**, après vérification que 8.4 est bien isolée (relecture des 9 sites avant et après) |
 | S2 | Ne pas utiliser sodium pour le portfolio : bcrypt (coût 12) pour les mots de passe, **AES-256-GCM via OpenSSL** (intégré) pour le chiffrement des champs, derrière la même interface `FieldCrypto`. Sodium serait réactivé sur l'hébergement commercial | Aucun | Acceptable, puisque les données sont fictives. Il faut alors maintenir deux implémentations testées de la même interface |
 | S3 | Bibliothèque `sodium_compat` (PHP pur) | Aucun | ❌ Nouvelle dépendance, lente, et pas d'Argon2id |
+
+### 17.4 Mise en œuvre de la décision S2
+
+- **Interface unique `Security\CryptoProvider`**, utilisée par `FieldCrypto` (§7.5) et par le scellement des sauvegardes. Deux implémentations :
+  - **`OpenSslProvider`** (MVP portfolio) : **AES-256-GCM** (`openssl_encrypt`, chiffrement authentifié standard), nonce aléatoire de 12 octets par valeur, tag de 16 octets vérifié, mêmes données associées (AAD) et même format versionné ; préfixe d'algorithme dans le chiffré (`k1.gcm:`). Pour les sauvegardes, enveloppe hybride standard : clé AES aléatoire chiffrée par **RSA-OAEP (SHA-256)** avec la clé publique, puis données en AES-256-GCM par blocs. Aucune primitive maison : uniquement des fonctions OpenSSL documentées ;
+  - **`SodiumProvider`** (SaaS commercial) : XChaCha20-Poly1305, `crypto_box_seal` et `crypto_secretstream`, activé dès que l'extension est disponible sur l'hébergement dédié.
+- Le **préfixe d'algorithme** permet de relire d'anciennes valeurs après un changement de fournisseur, puis de les rechiffrer par la rotation de clés (§7.5). Le portfolio ne contenant que des données fictives, aucune migration de données réelles ne sera nécessaire.
+- **Mots de passe** : `password_hash(PASSWORD_BCRYPT, ['cost' => 12])`, avec `password_needs_rehash` pour passer automatiquement à Argon2id sur l'hébergement commercial. Les mots de passe de plus de 72 octets sont refusés à la validation (limite de bcrypt), sans troncature silencieuse.
+- `bin/check-requirements.php` vérifie que `openssl` prend en charge `aes-256-gcm` et l'OAEP en SHA-256, puis exécute un aller-retour de test au démarrage.
+- **Tests** : les mêmes tests de contrat (aller-retour, AAD modifiée, tag altéré, rotation) sont exécutés sur **les deux** implémentations ; en développement, le `SodiumProvider` est testé localement là où l'extension est disponible.
+- Aucune modification de l'hébergement n'est nécessaire.

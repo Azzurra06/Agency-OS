@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'self'; object-src 'none'; require-trusted-types-for 'script'">
+  <meta name="robots" content="noindex">
+  <title>Design system · Agency OS (prototype)</title>
+  <link rel="stylesheet" href="assets/css/tokens.css">
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/components.css">
+  <link rel="stylesheet" href="assets/css/layout.css">
+  <link rel="stylesheet" href="assets/css/pages.css">
+  <script src="assets/vendor/chart-4.4.4.umd.min.js" defer></script>
+  <script src="assets/js/proto.js" type="module"></script>
+</head>
+<body>
+  <a class="skip-link" href="#contenu">Aller au contenu</a>
+  <main id="contenu" class="page">
+    <header class="page-header">
+      <div class="page-header__titles">
+        <div class="cluster"><span class="brand__mark" aria-hidden="true">AO</span><p class="eyebrow">Agency OS · prototype statique · phase 3</p></div>
+        <h1>Design system</h1>
+        <p class="page-header__sub">Tokens, composants et écrans clés. Toutes les valeurs sont fictives. Aucun calcul n'est effectué dans ce prototype : les résultats affichés reprennent les cas de référence de <code>docs/03-formules-et-scoring.md</code>.</p>
+      </div>
+    </header>
+
+    <section class="ds-links" aria-label="Écrans du prototype">
+      <a class="card ds-link" href="vue-ensemble.html"><svg class="icon" aria-hidden="true"><use href="assets/icons/sprite.svg#i-layout-dashboard"></use></svg><h2>Vue d'ensemble</h2><p class="text-secondary text-small">KPI, objectif, priorités avec leurs sources, plan d'action, évolution avec un jour manquant.</p></a>
+      <a class="card ds-link" href="simulateur.html"><svg class="icon" aria-hidden="true"><use href="assets/icons/sprite.svg#i-tag"></use></svg><h2>Simulateur de prix</h2><p class="text-secondary text-small">Brouillon sans effet sur la stratégie, hypothèses visibles, marge et majoration distinguées.</p></a>
+      <a class="card ds-link" href="diagnostic.html"><svg class="icon" aria-hidden="true"><use href="assets/icons/sprite.svg#i-clipboard-check"></use></svg><h2>Question du diagnostic</h2><p class="text-secondary text-small">Étapes, sauvegarde automatique, politique « Je ne sais pas » expliquée.</p></a>
+    </section>
+
+    <section class="ds-section" aria-labelledby="s-colors">
+      <h2 id="s-colors">Couleurs</h2>
+      <p class="text-secondary">Fond blanc, accent indigo. Tous les textes respectent un contraste d'au moins 4,5:1 ; les contours de champs, d'au moins 3:1.</p>
+      <div class="ds-grid">
+        <div class="swatch"><div class="swatch__color sw-bg"></div><div class="swatch__meta"><strong>Fond</strong><span class="num text-tertiary">#FFFFFF</span></div></div>
+        <div class="swatch"><div class="swatch__color sw-sunken"></div><div class="swatch__meta"><strong>Surface en retrait</strong><span class="num text-tertiary">#F7F7F9</span></div></div>
+        <div class="swatch"><div class="swatch__color sw-border"></div><div class="swatch__meta"><strong>Bordure</strong><span class="num text-tertiary">#E4E4E9</span></div></div>
+        <div class="swatch"><div class="swatch__color sw-strong"></div><div class="swatch__meta"><strong>Contour de champ</strong><span class="num text-tertiary">#8C8C99 · 3,3:1</span></div></div>
+        <div class="swatch"><div class="swatch__color sw-text"></div><div class="swatch__meta"><strong>Texte</strong><span class="num text-tertiary">#17171C · 16,7:1</span></div></div>
+        <div class="swatch"><div class="swatch__color sw-text2"></div><div class="swatch__meta"><strong>Texte secondaire</strong><span class="num text-tertiary">#52525E · 7,7:1</span></div></div>
+        <div class="swatch"><div class="swatch__color sw-accent"></div><div class="swatch__meta"><strong>Accent indigo</strong><span class="num text-tertiary">#4F46E5 · 6,3:1</span></div></div>
+        <div class="swatch"><div class="swatch__color sw-accent-subtle"></div><div class="swatch__meta"><strong>Accent atténué</strong><span class="num text-tertiary">#EEF0FF</span></div></div>
+        <div class="swatch"><div class="swatch__color sw-success"></div><div class="swatch__meta"><strong>Succès</strong><span class="num text-tertiary">#15803D · 5,0:1</span></div></div>
+        <div class="swatch"><div class="swatch__color sw-warning"></div><div class="swatch__meta"><strong>Attention</strong><span class="num text-tertiary">#A16207 · 4,9:1</span></div></div>
+        <div class="swatch"><div class="swatch__color sw-danger"></div><div class="swatch__meta"><strong>Danger</strong><span class="num text-tertiary">#C42B2B · 5,6:1</span></div></div>
+        <div class="swatch"><div class="swatch__color sw-info"></div><div class="swatch__meta"><strong>Information</strong><span class="num text-tertiary">#1D4ED8 · 6,7:1</span></div></div>
+      </div>
+    </section>
+
+    <section class="ds-section" aria-labelledby="s-type">
+      <h2 id="s-type">Typographie</h2>
+      <p class="text-secondary"><strong>Montserrat</strong> pour les titres et tous les chiffres (chiffres tabulaires : les colonnes restent alignées). <strong>Poppins</strong> pour le texte.</p>
+      <div>
+        <div class="type-row"><span class="text-small text-tertiary">Montant KPI · 34 px · 700</span><span class="type-display">24 400 €</span></div>
+        <div class="type-row"><span class="text-small text-tertiary">Titre de page · 24 px · 700</span><h1>Vue d'ensemble</h1></div>
+        <div class="type-row"><span class="text-small text-tertiary">Titre de section · 18 px · 600</span><h2>Priorités</h2></div>
+        <div class="type-row"><span class="text-small text-tertiary">Titre de carte · 15 px · 600</span><h3>Revoir le prix « Site vitrine »</h3></div>
+        <div class="type-row"><span class="text-small text-tertiary">Texte · Poppins 14 px</span><p>Le prix pratiqué est 19,4 % sous le prix recommandé.</p></div>
+        <div class="type-row"><span class="text-small text-tertiary">Aide · 13 px</span><p class="text-small text-secondary">Issu du profil : exercice 2025, 12 mois.</p></div>
+        <div class="type-row"><span class="text-small text-tertiary">Chiffres tabulaires</span><div class="num"><div>1 111,11 €</div><div>9 999,99 €</div><div>3 970,59 €</div></div></div>
+      </div>
+    </section>
+
+    <section class="ds-section" aria-labelledby="s-nature">
+      <h2 id="s-nature">Nature des données</h2>
+      <p class="text-secondary">Toujours une icône et un libellé : la couleur seule ne porte jamais l'information.</p>
+      <div class="cluster">
+        <span class="nature nature--declared"><svg class="icon" aria-hidden="true"><use href="assets/icons/sprite.svg#i-pencil"></use></svg>Déclaré</span>
+        <span class="nature nature--assumption"><svg class="icon" aria-hidden="true"><use href="assets/icons/sprite.svg#i-lightbulb"></use></svg>Hypothèse</span>
+        <span class="nature nature--simulated"><svg class="icon" aria-hidden="true"><use href="assets/icons/sprite.svg#i-chart-spline"></use></svg>Simulé</span>
+        <span class="nature nature--calculated"><svg class="icon" aria-hidden="true"><use href="assets/icons/sprite.svg#i-square-function"></use></svg>Calculé</span>
+        <span class="nature nature--calculated"><svg class="icon" aria-hidden="true"><use href="assets/icons/sprite.svg#i-square-function"></use></svg>Calculé, 2 hypothèses</span>
+        <span class="nature nature--frozen"><svg class="icon" aria-hidden="true"><use href="assets/icons/sprite.svg#i-lock"></use></svg>Figé le 12/11/2026 · v3</span>
+        <span class="nature nature--demo"><svg class="icon" aria-hidden="true"><use href="assets/icons/sprite.svg#i-flag"></use></svg>Démo</span>
+      </div>
+    </section>
+
+    <section class="ds-section" aria-labelledby="s-buttons">
+      <h2 id="s-buttons">Boutons</h2>
+      <div class="cluster">
+        <button class="btn btn--primary" type="button">Finaliser la simulation</button>
+        <button class="btn btn--secondary" type="button">Dupliquer</button>
+        <button class="btn btn--ghost" type="button">Annuler</button>
+        <button class="btn btn--danger" type="button">Supprimer le brouillon</button>
+        <button class="btn btn--primary" type="button" aria-busy="true">Enregistrement</button>
+        <button class="btn btn--secondary" type="button" disabled>Désactivé</button>
+        <button class="btn btn--secondary btn--icon" type="button" aria-label="Paramètres"><svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/sprite.svg#i-settings"></use></svg></button>
+      </div>
+    </section>
+
+    <section class="ds-section" aria-labelledby="s-fields">
+      <h2 id="s-fields">Champs</h2>
+      <div class="ds-grid">
+        <div class="field"><label class="field__label" for="f1">Chiffre d'affaires HT</label><div class="input-affix"><input class="input num" id="f1" value="180 000,00" inputmode="decimal"><span class="input-affix__unit">€</span></div><p class="field__help">Exercice clos · 12 mois</p></div>
+        <div class="field"><label class="field__label" for="f2">Taux de facturabilité <span class="nature nature--assumption"><svg class="icon" aria-hidden="true"><use href="assets/icons/sprite.svg#i-lightbulb"></use></svg>Hypothèse</span></label><div class="input-affix"><input class="input num" id="f2" value="65,00" inputmode="decimal"><span class="input-affix__unit">%</span></div><p class="field__help">Valeur par défaut, à confirmer.</p></div>
+        <div class="field"><label class="field__label" for="f3">Marge cible</label><div class="input-affix"><input class="input num" id="f3" value="95,00" aria-invalid="true" aria-describedby="f3-err" inputmode="decimal"><span class="input-affix__unit">%</span></div><p class="field__error" id="f3-err"><svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/sprite.svg#i-triangle-alert"></use></svg>La marge cible doit être comprise entre 0 et 90 %.</p></div>
+        <div class="field"><label class="field__label" for="f4">Coût horaire figé</label><div class="input-affix"><input class="input num" id="f4" value="60,00" readonly><span class="input-affix__unit">€/h</span></div><p class="field__help">Lecture seule : version figée.</p></div>
+      </div>
+    </section>
+
+    <section class="ds-section" aria-labelledby="s-kpi">
+      <h2 id="s-kpi">Indicateurs et états</h2>
+      <div class="kpi-grid">
+        <article class="card kpi"><div class="kpi__top"><h3 class="kpi__label">Coût horaire complet</h3><span class="nature nature--calculated"><svg class="icon" aria-hidden="true"><use href="assets/icons/sprite.svg#i-square-function"></use></svg>Calculé, 1 hypothèse</span></div><p class="kpi__value">67,01<span class="kpi__unit">€/h</span></p><div class="kpi__meta"><span class="delta delta--down"><svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/sprite.svg#i-arrow-down"></use></svg>−2,1 %</span><span>depuis le 01/10</span></div></article>
+        <article class="card kpi kpi--empty"><div class="kpi__top"><h3 class="kpi__label">Résultat estimé</h3></div><p class="kpi__value">Non calculable</p><div class="kpi__meta"><span>Il manque vos charges fixes.</span><a href="#">Compléter le profil</a></div></article>
+        <article class="card kpi"><div class="kpi__top"><h3 class="kpi__label">Maturité business</h3><span class="badge badge--warning">Diagnostic partiel</span></div><div class="maturity"><div class="score-ring score-ring--partial" role="img" aria-label="Score global non disponible : diagnostic partiel"><p class="score-ring__value">5/6<small>dimensions</small></p></div><p class="text-small text-secondary">Score global disponible lorsque les 6 dimensions sont renseignées.</p></div></article>
+      </div>
+      <div class="ds-grid">
+        <div class="card"><div class="stack stack--sm"><span class="skeleton"></span><span class="skeleton"></span><span class="skeleton"></span><p class="text-small text-tertiary">Chargement (plus de 300 ms)</p></div></div>
+        <div class="card"><div class="empty"><span class="empty__icon"><svg class="icon" aria-hidden="true"><use href="assets/icons/sprite.svg#i-tag"></use></svg></span><h3>Aucune simulation</h3><p class="empty__text text-small">Créez votre première simulation à partir d'une prestation.</p><button class="btn btn--primary btn--sm" type="button">Nouvelle simulation</button></div></div>
+      </div>
+    </section>
+
+    <section class="ds-section" aria-labelledby="s-alerts">
+      <h2 id="s-alerts">Alertes et retours</h2>
+      <div class="stack">
+        <div class="alert alert--warning"><svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/sprite.svg#i-triangle-alert"></use></svg><div><p class="alert__title">Repose sur des données anciennes</p><p>Les contrats n'ont pas été mis à jour depuis plus de 6 mois. <a href="#">Mettre à jour</a></p></div></div>
+        <div class="alert alert--info"><svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/sprite.svg#i-info"></use></svg><div><p class="alert__title">Fondée sur un diagnostic partiel</p><p>La dimension « Stratégie et développement » manque de réponses exploitables.</p></div></div>
+        <div class="alert alert--danger"><svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/sprite.svg#i-triangle-alert"></use></svg><div><p class="alert__title">Une erreur est survenue</p><p>Référence : <span class="num">7F3K-2Q9M</span>. <a href="#">Réessayer</a></p></div></div>
+        <div class="cluster"><span class="inline-status"><span class="inline-status__pulse" aria-hidden="true"></span>Calcul…</span><span class="inline-status inline-status--ok"><svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/sprite.svg#i-check"></use></svg>Enregistré à 10:42</span></div>
+        <div class="toast" role="status"><svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/sprite.svg#i-circle-check"></use></svg>Simulation enregistrée</div>
+        <div class="dialog" role="dialog" aria-labelledby="dlg-t" aria-describedby="dlg-d">
+          <h3 id="dlg-t">Finaliser la simulation « Site vitrine » ?</h3>
+          <p id="dlg-d" class="text-secondary">Elle deviendra une <strong>version figée</strong> et ne pourra plus être modifiée. Elle servira de référence pour la stratégie de la prestation <strong>Site vitrine</strong> et remplacera la version v3.</p>
+          <div class="card card--sunken text-small"><div class="result-line"><span class="result-line__label">Coût horaire figé</span><span class="result-line__value">60,00 €/h</span></div><div class="result-line"><span class="result-line__label">Prix recommandé figé</span><span class="result-line__value">3 970,59 €</span></div></div>
+          <div class="dialog__actions"><button class="btn btn--ghost" type="button">Annuler</button><button class="btn btn--primary" type="button"><svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/sprite.svg#i-lock"></use></svg>Finaliser la simulation</button></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="ds-section" aria-labelledby="s-charts">
+      <h2 id="s-charts">Graphiques</h2>
+      <p class="text-secondary">Trait plein pour le réel, pointillés pour le simulé, trous pour les jours manquants (jamais d'interpolation). Un axe du radar non calculable n'est pas tracé à 0.</p>
+      <div class="dash-grid">
+        <div class="card">
+          <div class="card__header"><h3>Réel et simulé · exemple de style</h3><span class="nature nature--demo"><svg class="icon" aria-hidden="true"><use href="assets/icons/sprite.svg#i-flag"></use></svg>Valeurs fictives</span></div>
+          <div class="chart-box"><canvas id="chart-style" role="img" aria-label="Exemple : MRR réel en trait plein avec un mois manquant, puis projection simulée en pointillés."></canvas></div>
+          <div class="chart-legend"><span><span class="legend-swatch" aria-hidden="true"></span>Réel</span><span><span class="legend-swatch legend-swatch--dashed" aria-hidden="true"></span>Simulé</span><span><span class="legend-swatch legend-swatch--gap" aria-hidden="true"></span>Donnée manquante</span></div>
+          <script type="application/json" id="data-style">{"labels": ["juil.", "août", "sept.", "oct.", "nov.", "déc.", "janv.", "févr.", "mars"], "real": [1650, 1750, null, 2150, 2300, null, null, null, null], "simulated": [null, null, null, null, 2300, 2420, 2535, 2645, 2750]}</script>
+        </div>
+        <div class="card">
+          <div class="card__header"><h3>Radar · diagnostic partiel</h3><span class="badge badge--warning">5/6 dimensions</span></div>
+          <div class="chart-box"><canvas id="chart-radar" role="img" aria-label="Radar : Positionnement 53, Acquisition 58, Rentabilité 40, Organisation 75, Fidélisation 80, Stratégie : données insuffisantes."></canvas></div>
+          <p class="text-small text-tertiary">« Stratégie » : données insuffisantes, score global non affiché.</p>
+          <script type="application/json" id="data-radar">{"labels": ["Positionnement", "Acquisition", "Rentabilité", "Organisation", "Fidélisation", "Stratégie (insuffisant)"], "values": [53.33, 58.33, 40, 75, 80, null]}</script>
+        </div>
+      </div>
+    </section>
+
+    <section class="ds-section" aria-labelledby="s-licences">
+      <h2 id="s-licences">Ressources tierces (locales)</h2>
+      <p class="text-small text-secondary">Montserrat et Poppins (SIL Open Font License 1.1) · icônes Lucide v0.441.0 (ISC) · Chart.js 4.4.4 (MIT). Aucune ressource n'est chargée depuis un serveur externe.</p>
+    </section>
+  </main>
+</body>
+</html>
