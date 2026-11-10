@@ -1,6 +1,6 @@
 # Agency OS — Phase 1 : Cadrage fonctionnel
 
-> Statut : **proposition, en attente de validation**
+> Statut : **validé le 10/11/2026** — voir les décisions en §10, qui priment sur les propositions des §6 et §9.
 > Périmètre de ce document : vision, parcours, périmètre du MVP, dépendances entre modules, ambiguïtés et arborescence.
 > Aucun code n'est produit à ce stade. L'architecture technique détaillée (schéma SQL, endpoints, services) fera l'objet de la phase 2.
 
@@ -500,3 +500,23 @@ Choix pressenti à confirmer en phase 2 : des **pages HTML servies par PHP** (un
 11. **Architecture front** : pages servies par PHP et modules JS, plutôt qu'une SPA.
 
 Après validation (ou ajustements), la **phase 2 — Architecture** produira : le schéma MySQL complet, la liste des endpoints REST, le découpage des services métier et la documentation formelle des formules avec des cas de test chiffrés.
+
+---
+
+## 10. Décisions validées (10/11/2026)
+
+Ces décisions **remplacent** les propositions correspondantes du §6 en cas de divergence.
+
+| # | Sujet | Décision |
+|---|---|---|
+| 1 | Période de référence (F2) | Par défaut : **dernier exercice clos**. Option : **12 derniers mois**. La période (dates de début et de fin) et sa **durée en mois** sont affichées partout où un chiffre en dépend. Un exercice qui ne dure pas 12 mois est annualisé ; la valeur annualisée porte le badge « Calculé » et la valeur déclarée reste visible. |
+| 2 | Rémunération du dirigeant (F3) | On saisit son **coût complet annuel, cotisations comprises**, ainsi que le **montant déjà inclus** dans les charges déclarées. Seule la différence est ajoutée, ce qui évite le double comptage. |
+| 3 | Charges variables (F5) | Il y a deux catégories. Les **frais directement attribuables à un projet** sont saisis par projet dans le pricing (ils figurent aussi dans le profil, en montant global, pour le résultat). Les **charges variables générales non attribuables** (commissions de paiement, frais bancaires proportionnels, outils facturés à l'usage…) sont converties en **taux sur le CA** et intégrées au prix de chaque prestation. |
+| 4 | Marge et majoration (F6) | La formule est validée. Les libellés distinguent toujours **marge sur prix de vente** et **majoration sur coût**. |
+| 5 | Part récurrente (F9) | La valeur **déclarée reste la référence**. La part calculée à partir des contrats saisis est affichée **à côté**, comme « couverture par les contrats saisis ». Elle ne remplace jamais automatiquement la valeur déclarée. Seul l'utilisateur peut mettre à jour la valeur déclarée, par une action explicite. |
+| 6 | Résultat estimé (F10) | Le libellé « Résultat estimé » est retenu. Le détail de **ce qui est inclus et exclu** est toujours accessible. |
+| 7 | Pondération du diagnostic (B2) | Les **six dimensions ont des poids identiques** au MVP. |
+| 8 | Modèles de temps (C1) | Le préremplissage est **facultatif**, à la demande, **entièrement modifiable**, et jamais présenté comme une référence universelle. |
+| 9 | Démo (G1) | Une organisation temporaire par visiteur, avec **isolation des données**, une **expiration visible** (compte à rebours) et une **suppression fiable** (tâche planifiée, purge de secours, suppression en cascade, vérification par les tests). |
+| 10 | Tests | PHPUnit, en dépendance de développement uniquement. |
+| 11 | Architecture front | Pages servies par PHP et modules JavaScript ES. |
