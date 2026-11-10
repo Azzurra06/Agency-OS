@@ -1,6 +1,6 @@
 # Agency OS — Phase 1 : Cadrage fonctionnel
 
-> Statut : **validé le 10/11/2026** — voir les décisions en §10, qui priment sur les propositions des §6 et §9.
+> Statut : **validé le 10/11/2026**. Les décisions des §10 (phase 1) et §11 (phase 2) **priment** sur les propositions des §4 à §9 en cas de divergence.
 > Périmètre de ce document : vision, parcours, périmètre du MVP, dépendances entre modules, ambiguïtés et arborescence.
 > Aucun code n'est produit à ce stade. L'architecture technique détaillée (schéma SQL, endpoints, services) fera l'objet de la phase 2.
 
@@ -520,3 +520,43 @@ Ces décisions **remplacent** les propositions correspondantes du §6 en cas de 
 | 9 | Démo (G1) | Une organisation temporaire par visiteur, avec **isolation des données**, une **expiration visible** (compte à rebours) et une **suppression fiable** (tâche planifiée, purge de secours, suppression en cascade, vérification par les tests). |
 | 10 | Tests | PHPUnit, en dépendance de développement uniquement. |
 | 11 | Architecture front | Pages servies par PHP et modules JavaScript ES. |
+
+---
+
+## 11. Décisions d'architecture validées (phase 2, 10/11/2026)
+
+### 11.1 Décisions
+
+| # | Sujet | Décision | Report dans les documents |
+|---|---|---|---|
+| A1 | Aperçus instantanés | **Validé.** Toutes les formules sont centralisées dans les services PHP du domaine. Temporisation de **350 ms** (fourchette de 300 à 400 ms), `AbortController`, numéro de séquence contre les réponses obsolètes. Les aperçus **n'enregistrent jamais** de données (vérifié par un test). | 02 §1, §3 |
+| A2 | Valeurs calculées | **Ajusté.** Les KPI courants et les **brouillons** sont recalculés à la lecture. Les **simulations finalisées**, les **diagnostics terminés** et les **instantanés** conservent les hypothèses et les résultats de leur date de validation (`frozen_context`, `frozen_results`, `calc_version`). Un enregistrement figé n'est jamais modifié : on crée une nouvelle version. | 02 §1, §5.3 à §5.7 ; 03 §0, §4.5 |
+| A3 | Questionnaire versionné | **Validé.** Une version par fichier, immuable une fois publiée (questions, options, conditions, politique « Je ne sais pas », scoring), avec des **identifiants stables**, jamais réutilisés. L'empreinte de chaque version est vérifiée par les tests. Un ancien diagnostic s'interprète toujours avec sa propre version. | 02 §5.5 ; 03 §6.4 |
+| A4 | Profil financier | **Validé avec ajout.** Un seul profil actif par organisation, accompagné d'un **journal léger** (`financial_profile_changes`) des champs financiers importants. Ce journal sert à tracer les modifications ; les instantanés servent à suivre l'évolution des KPI. | 02 §5.2 |
+| A5 | Précision financière | **Corrigé.** `DECIMAL` en MySQL et **BCMath** en PHP, via l'objet de valeur `Decimal`. Aucun flottant dans les calculs monétaires. Précision interne de 12 décimales, arrondi unique en sortie (moitié éloignée de zéro), échelles définies, cas limites testés. BCMath est **vérifié actif** sur le sous-domaine (PHP 8.3.36). | 02 §1, §5, §6, §11 ; 03 §0.1, §0.2 |
+| A6 | « Je ne sais pas » | **Corrigé.** Une politique par question : `penalize` (pratique absente, niveau 0) ou `exclude` (inconnu, retiré du calcul). Indicateur de **fiabilité**. Une dimension est calculable avec au moins 3 réponses exploitables **et** au moins 60 % des questions applicables ; le score global n'est affiché que si les 6 dimensions sont calculables. | 02 §5.5 ; 03 §6.2, §6.3 |
+| A7 | Rythmes de calcul | **Validé avec distinction.** À la demande pour les aperçus ; **après enregistrement** des données pertinentes pour les recommandations ; **cron quotidien** pour les instantanés (insertion seule, jamais recréés lors d'une modification). | 02 §3, §7.2, §11 |
+
+### 11.2 Contradictions relevées avec les choix précédents, et résolution
+
+| # | Choix précédent | Contradiction | Résolution appliquée |
+|---|---|---|---|
+| C1 | §3 P3, étape 7 : « à l'enregistrement, le serveur recalcule et fait foi ; une recommandation de prix est créée » | Avec A2, l'enregistrement d'un **brouillon** n'est plus une validation. Déclencher les règles sur les brouillons ferait apparaître et disparaître des recommandations au fil des essais. | Le parcours P3 gagne une étape **« Finaliser »**. Les règles de prix ne lisent que la **dernière simulation finalisée** de chaque prestation. Enregistrer un brouillon ne déclenche aucune réévaluation. ⚠️ **Q1** |
+| C2 | 02 §5.3 : `hourly_cost_mode = 'profile'`, c'est-à-dire que le scénario suit le profil automatiquement | Une simulation finalisée ne peut plus suivre le profil. | Ce mode ne vaut que pour les brouillons. À la finalisation, le coût horaire est figé. Un **indicateur de dérive** et la règle `PRICING_DRIFT` invitent à revalider. |
+| C3 | §4, Module A : « Historique détaillé des modifications du profil = hors MVP » | A4 demande un journal **dans** le MVP. | Le **journal léger** (champs financiers importants, valeur avant et après, auteur, date) entre au MVP. L'historique **détaillé** (tous les champs, restauration d'une version) reste hors MVP. |
+| C4 | §6 G3 et parcours P6 : « un instantané à chaque modification significative, au plus un par jour » ; 02 (première version) : écouteurs d'instantané sur chaque événement | Contraire à A7. | Les instantanés sont **uniquement** produits par le cron quotidien. Conséquences : un nouveau compte n'a pas de courbe d'évolution avant le lendemain (état vide : « L'historique démarre demain ») ; un jour où le cron n'a pas tourné reste un trou visible, non reconstitué. La démo reçoit des instantanés fictifs marqués « Démo ». |
+| C5 | §6 F7 (« centimes en entiers ou `DECIMAL`, à trancher ») et 02 décision 6 (flottants double précision) | Remplacés par A5. | BCMath et `DECIMAL`. Conséquence sur l'API : les valeurs décimales sont échangées **en chaînes**, et les taux **en pourcentage**, pour que le front n'effectue aucune opération. |
+| C6 | §8, tableau des risques : « fichier JSON de cas attendus lu par PHP **et** JS » | Il n'y a plus de formule en JS (A1). | Les cas de référence ne servent qu'aux tests PHP. |
+| C7 | §2 principe « aucune dépendance » et §1.5 | BCMath est une **extension** PHP. | Elle est acceptable : il s'agit d'une extension standard, déjà active sur l'hébergement. Un contrôle au démarrage (`bin/check-requirements.php`) rend le prérequis explicite. Aucune bibliothèque de remplacement n'est embarquée, pour rester simple. |
+| C8 | §4, Module F : « Score de maturité » toujours affiché ; 02 décision 7 : « Je ne sais pas » vaut 0 | Avec A6, un diagnostic terminé peut n'avoir **aucun score global**. | Le dashboard, les règles et les instantanés acceptent un score NULL (« Score non disponible : données insuffisantes ») ; la règle `DIAG_LOW_RELIABILITY` est ajoutée. La décision 7 de la version précédente de 02 est annulée. |
+| C9 | §5.2, ligne « Prix recommandé d'une prestation » : « scénario de référence de la simulation » | Il faut préciser **quelle version**. | Le scénario de référence de la **dernière version finalisée**. |
+| C10 | §3 P4 (projection récurrente) et §5.2 « MRR simulé » | A2 parle de « simulations finalisées » sans préciser s'il s'agit aussi des **scénarios récurrents**. | Par cohérence, le même cycle brouillon, finalisée, remplacée est appliqué aux scénarios récurrents. Les **offres** et leurs **contrats** restent des données vivantes (le MRR contractualisé est recalculé à la lecture). ⚠️ **Q3** |
+
+### 11.3 Questions ouvertes
+
+| # | Question | Proposition |
+|---|---|---|
+| Q1 | Les règles de prix doivent-elles lire **uniquement les simulations finalisées** ? | Oui. Cela donne des recommandations stables et une intention explicite. En contrepartie, sans finalisation il n'y a pas de recommandation de prix, et `NO_PRICING` invite à finaliser. |
+| Q2 | Seuils de calculabilité du diagnostic : au moins 3 réponses exploitables **et** au moins 60 % par dimension ; score global seulement si les **6** dimensions sont calculables ? | Oui. Avec des poids égaux, un global calculé sur 5 dimensions ne serait pas comparable à un global calculé sur 6. |
+| Q3 | Appliquer la finalisation aux **scénarios récurrents** ? | Oui, avec le même modèle que le pricing, pour un seul concept à apprendre dans l'interface. |
+| Q4 | Heure du cron quotidien | 02:15 (heure de Paris), en dehors des heures d'usage. |

@@ -1,6 +1,6 @@
 # Agency OS — Formules financières, scoring et règles
 
-> Statut : **proposition, en attente de validation** (livrable de la phase 2)
+> Statut : **validé avec ajustements le 10/11/2026** (livrable de la phase 2). Les points ouverts sont marqués ⚠️ et listés dans [01-cadrage.md §11](01-cadrage.md).
 > Ce document est la **spécification de référence** des calculs. Le code PHP (`app/Domain/*`) doit s'y conformer, et chaque cas chiffré ci-dessous deviendra un test automatisé (`tests/fixtures/*.json`).
 > Tous les montants sont **HT, en euros**.
 
@@ -11,9 +11,57 @@
 | Notation | Signification |
 |---|---|
 | `NULL` | donnée non renseignée. Un calcul qui en dépend renvoie « non calculable » et la liste des champs manquants, **jamais 0** |
-| Arrondi | précision double pendant le calcul, arrondi **au centime** (arrondi commercial, la moitié vers le haut) uniquement en sortie. Taux : 4 décimales en API, 1 décimale à l'affichage |
-| Taux | stockés en fraction (0,30 = 30 %) |
+| Taux | stockés en fraction (0,30 = 30 %), échangés en pourcentage dans l'API (`"30.00"`) |
 | Statuts | Déclaré · Calculé · Calculé avec hypothèses · Simulé · Démo |
+| Figé | une simulation finalisée, un scénario finalisé, un diagnostic terminé ou un instantané conservent les hypothèses et les résultats de leur date de validation, avec `calc_version` |
+
+### 0.1 Politique de précision et d'arrondi
+
+**Outil.** Tous les calculs monétaires, les taux, les heures et les scores passent par `Support\Decimal` (BCMath). **Aucun flottant binaire** n'intervient dans ces calculs. Les valeurs entrent sous forme de chaînes : celles de MySQL `DECIMAL`, renvoyées en chaînes par PDO, et celles de l'API, qui exige des chaînes.
+
+**Précision interne : 12 décimales** pour chaque opération intermédiaire. BCMath tronque à cette échelle, soit une erreur inférieure à 10⁻¹², sans effet sur un arrondi à 2 ou 4 décimales. Les valeurs « pile à la moitié » (0,125 ; 2,675…) sont représentées exactement et s'arrondissent donc correctement.
+
+**Ordre des opérations : multiplier avant de diviser.** Exemple : `X × 12 ÷ D`, et non `X × (12 ÷ D)`, pour éviter de propager un quotient tronqué.
+
+**Arrondi : une seule fois, en sortie**, au plus proche, avec la **moitié éloignée de zéro** (2,675 → 2,68 ; −2,345 → −2,35). Un résultat dérivé est toujours calculé à partir des valeurs **non arrondies**, jamais à partir d'un résultat déjà arrondi.
+
+| Grandeur | Échelle de sortie (API) | Affichage |
+|---|---|---|
+| Montants, prix, coût horaire | 2 décimales | 2 décimales (`3 970,59 €`) |
+| Taux (marge, majoration, écart, part…) | pourcentage à 2 décimales (`"13.63"`) | 1 décimale (`13,6 %`) |
+| Heures | 2 décimales | 1 ou 2 décimales |
+| Clients projetés | 2 décimales | entier précédé de « ≈ » |
+| Scores de diagnostic | 2 décimales | entier |
+| Facteur d'annualisation `k`, taux `tv` internes | non arrondis | — |
+
+**Cohérence des totaux.** Un total est l'arrondi de la somme exacte. Une ligne de détail est l'arrondi de sa propre valeur exacte. Un écart d'au plus 0,01 € par ligne entre la somme affichée des lignes et le total est donc possible. Il est accepté, sans ventilation forcée, et signalé par une infobulle.
+
+**Seuils des règles.** Ils sont évalués sur les valeurs **exactes**, pas sur les valeurs arrondies affichées. La valeur exacte figure dans `evidence`.
+
+**Zéro négatif.** `-0.00` est normalisé en `0.00`.
+
+**Valeurs figées.** Les résultats sont stockés **arrondis à l'échelle de sortie** (ce que l'utilisateur a validé), à côté des entrées exactes. Un test vérifie que recalculer à partir des entrées figées et de la même `calc_version` redonne exactement les mêmes résultats.
+
+### 0.2 Cas limites testés (`tests/fixtures/decimal-cases.json`)
+
+| Cas | Attendu | Piège évité |
+|---|---|---|
+| arrondi(2,675 ; 2) | 2,68 | un flottant donne 2,67 |
+| arrondi(1,005 ; 2) | 1,01 | un flottant donne 1,00 |
+| arrondi(0,125 ; 2) | 0,13 | arrondi au pair (banquier) |
+| arrondi(−2,345 ; 2) | −2,35 | sens de la moitié pour les négatifs |
+| arrondi(−0,004 ; 2) | 0,00 | pas de `-0.00` |
+| 0,1 + 0,2 | 0,3 exactement | 0,30000000000000004 |
+| 100 ÷ 3, puis × 3 | 33,33 affiché ; 100,00 en recalcul exact | arrondi intermédiaire |
+| 270 000 × 12 ÷ 18 | 180 000,00 | ordre des opérations |
+| 99 999 999,99 × 9 999 h | exact, sans dépassement | débordement (les résultats figés sont stockés en JSON texte) |
+| H = 0 | erreur `no_billable_hours` | division par zéro |
+| P = 0 (marge sur prix) | non calculable | division par zéro |
+| R = 0 | `tv` = NULL, signalé | division par zéro |
+| m + tv = 1 exactement | erreur `margin_plus_variable_rate_too_high` | prix infini |
+| m = 0,90 et tv = 0,0999 | prix valide, très élevé, avec un avertissement | borne |
+| saisie `"12,5"`, `"1e3"` ou nombre JSON | 422 | format |
+
 
 ---
 
@@ -30,7 +78,7 @@
 - **Affichage obligatoire** partout où un montant dépend de la période : « Exercice clos du 01/07/2024 au 31/12/2025 · 18 mois », ou « 12 derniers mois du 01/11/2025 au 31/10/2026 · 12 mois ».
 - Si `D ≠ 12`, les montants annualisés (`X × k`) portent le badge « Calculé (annualisé) » et le montant déclaré reste affiché.
 
-**Cas PER-1** : exercice du 01/07/2024 au 31/12/2025 → `D = 18`, `k = 0,6667`. CA déclaré 270 000 € → CA annualisé **180 000,00 €**.
+**Cas PER-1** : exercice du 01/07/2024 au 31/12/2025 → `D = 18`, `k = 12/18`. CA déclaré 270 000 € → CA annualisé `270 000 × 12 ÷ 18` = **180 000,00 €**.
 
 ---
 
@@ -162,6 +210,16 @@ L'arrondi commercial (réglage `price_rounding`) est proposé **à côté** de `
 - Avertissement affiché : « Ordre de grandeur pour démarrer, à adapter à votre méthode. Ce n'est pas une référence de marché. »
 - Chaque ligne est modifiable et supprimable. Les modèles sont définis dans le code (`Domain/Pricing/templates.php`) et versionnés.
 
+### 4.5 Brouillon et simulation finalisée
+
+| | Brouillon | Finalisée |
+|---|---|---|
+| Coût horaire, `tv`, prix actuel | lus en direct dans le profil et le catalogue | **figés** dans `frozen_context` |
+| Résultats | recalculés à chaque lecture | **figés** dans `frozen_results` (arrondis à l'échelle de sortie) |
+| Modification | libre | interdite (409) ; « Nouvelle version » crée un brouillon |
+| Utilisée par les règles | non | oui : la **dernière version finalisée** de chaque prestation, scénario de référence (⚠️ Q1) |
+| Dérive | — | indicateur, calculé à la lecture, si le coût horaire ou `tv` courants diffèrent des valeurs figées |
+
 ---
 
 ## 5. Revenus récurrents
@@ -216,7 +274,7 @@ Cumul sur 6 mois : **14 095,14 €**. Cumul sur 12 mois : **35 857,68 €**.
 
 ### 6.1 Structure
 
-6 dimensions **à poids égaux**, 5 questions chacune (30 au total). Chaque question propose 4 réponses graduées (niveaux 0 à 3) et une réponse « Je ne sais pas » (niveau 0, voir la décision 7 du document 02).
+6 dimensions **à poids égaux**, 5 questions chacune (30 au total), dans la version `v1` du questionnaire. Chaque question propose 4 réponses graduées (niveaux 0 à 3) et une réponse « Je ne sais pas », dont le traitement est **défini question par question** (§6.2).
 
 | Dimension | Thèmes des questions (rédaction définitive en phase 4) |
 |---|---|
@@ -231,14 +289,45 @@ Cumul sur 6 mois : **14 095,14 €**. Cumul sur 12 mois : **35 857,68 €**.
 
 **Préremplissage depuis le profil** (modifiable, marqué « issu de votre profil ») : « offre de maintenance existante » est prérempli au niveau ≥ 1 si une formule récurrente active existe ; « connaissance du coût horaire » est prérempli au niveau 2 si le coût horaire est calculable. Le profil reste la source de vérité des chiffres. Le diagnostic évalue des pratiques.
 
-### 6.2 Calcul
+### 6.2 « Je ne sais pas » : une politique par question
+
+Chaque question déclare, dans la version du questionnaire, une politique `unknown_policy` :
+
+| Politique | Signification | Effet sur le calcul | Quand l'utiliser |
+|---|---|---|---|
+| `penalize` | ne pas savoir **est** un manque de maturité | compte au niveau 0 et entre dans le calcul | la question porte sur une donnée ou une pratique que le dirigeant devrait maîtriser (« Connaissez-vous votre coût horaire ? », « Suivez-vous la rentabilité par projet ? ») |
+| `exclude` | réponse inconnue, sans jugement | retirée du calcul ; elle réduit la fiabilité | l'information peut légitimement être inconnue ou difficile à estimer (« Taux de renouvellement de vos contrats », « Part des leads issus du bouche-à-oreille ») |
+
+L'interface explique la politique au moment de la réponse. Pour une question `penalize`, une note précise : « Si vous ne le savez pas, c'est un axe de progrès : la réponse est comptée comme pratique absente. » La politique de chaque question figure aussi sur `/methodologie`.
+
+### 6.3 Calcul, seuils et fiabilité
 
 ```
-Score de dimension  Sd = 100 × Σ niveaux (questions applicables) ÷ (3 × nombre de questions applicables)
-Score global        Sg = moyenne simple des 6 Sd (non arrondis)
-Affichage           entier ; stockage avec 2 décimales
-Clôture possible    seulement si toutes les questions applicables ont une réponse
+Par dimension :
+  A   = questions applicables (conditions remplies)
+  Ue  = réponses « Je ne sais pas » sur des questions `exclude`
+  Up  = réponses « Je ne sais pas » sur des questions `penalize` (niveau 0)
+  n   = A − Ue                                   questions entrant dans le calcul
+  Sd  = 100 × Σ niveaux (n questions) ÷ (3 × n)
+  Fiabilité Fd = n ÷ A
+
+Dimension calculable   si  n ≥ 3  ET  Fd ≥ 0,60
+Score global Sg        = moyenne simple des 6 Sd (non arrondis), calculé SEULEMENT si les 6 dimensions sont calculables
+Fiabilité globale Fg   = Σ n ÷ Σ A
+Clôture du diagnostic  possible seulement si toutes les questions applicables ont une réponse (« Je ne sais pas » compris)
 ```
+
+| Fiabilité globale | Libellé affiché à côté du score |
+|---|---|
+| Fg ≥ 0,90 | Fiabilité élevée |
+| 0,75 ≤ Fg < 0,90 | Fiabilité moyenne : « x réponses inconnues ont été exclues » |
+| Fg < 0,75 | Fiabilité faible : « interprétez ce score avec prudence » |
+
+Le nombre de réponses `Up` (comptées comme pratique absente) est également affiché.
+
+**Si une dimension n'est pas calculable**, elle est affichée « Données insuffisantes » et absente du radar (l'axe est grisé). **Le score global n'est alors pas affiché** : « Score global non disponible : 1 dimension manque de réponses exploitables. » Les scores des autres dimensions restent visibles. ⚠️ Seuils à confirmer (Q2).
+
+Affichage : entier. Stockage : 2 décimales. Arrondi selon §0.1.
 
 | Niveau | Score |
 |---|---|
@@ -247,6 +336,7 @@ Clôture possible    seulement si toutes les questions applicables ont une répo
 | Structuré | 60 à 79 |
 | Avancé | 80 à 100 |
 
+- Seules les dimensions **calculables** sont éligibles aux forces et aux axes d'amélioration.
 - **Forces** : les 2 meilleures dimensions avec un score ≥ 60.
 - **Axes d'amélioration** : les 2 plus faibles avec un score < 60.
 - En cas d'égalité, l'ordre des dimensions du tableau ci-dessus départage. Si aucune dimension n'est éligible, le message s'adapte (« Pas de point fort marqué pour l'instant »).
@@ -262,9 +352,18 @@ Clôture possible    seulement si toutes les questions applicables ont une répo
 | D5 | 12 / 5 | 80,00 |
 | D6 | 5 / 5 | 33,33 |
 
-→ Score global **58,06**, affiché **58 / 100**, niveau « En construction ». Forces : D5, D4. Axes d'amélioration : D6, D3.
+→ Aucune réponse inconnue, fiabilité 1,00. Score global **58,06**, affiché **58 / 100**, niveau « En construction », fiabilité élevée. Forces : D5, D4. Axes d'amélioration : D6, D3.
 
-### 6.3 Mention
+**Cas DIAG-2** (« Je ne sais pas »)
+- D2, 5 questions applicables. Réponses : 3, 2, *inconnu (exclude)*, 2, *inconnu (penalize)* → `n` = 4, niveaux 3 + 2 + 2 + 0 = 7 → `Sd` = 100 × 7 ÷ 12 = **58,33** ; `Fd` = 0,80 → calculable.
+- D6, 5 questions applicables, dont 3 inconnues `exclude` → `n` = 2 < 3 → **non calculable**.
+- Conséquence : D2 est affichée (58), D6 apparaît comme « Données insuffisantes », et le **score global n'est pas affiché**. La règle `DIM_LOW_D6` ne se déclenche pas ; `DIAG_LOW_RELIABILITY` se déclenche (§7.2).
+
+### 6.4 Versions
+
+L'interprétation d'un diagnostic utilise **toujours sa propre version** : libellés, conditions, politiques et scoring d'origine. Ses scores sont figés à la clôture. Un diagnostic `v1` reste lisible et comparable par dimension après la publication d'une `v2` (voir 02 §5.5).
+
+### 6.5 Mention
 
 « Autoévaluation indicative, fondée sur vos réponses. Ce n'est ni une certification, ni un diagnostic financier officiel. » La table complète des questions, des réponses et des points est publiée sur `/methodologie`.
 
@@ -276,7 +375,7 @@ Clôture possible    seulement si toutes les questions applicables ont une répo
 
 ```
 base(sévérité)     info = 20 · medium = 45 · high = 70 · critical = 90
-bonus_dimension    = arrondi(10 × (1 − Sd ÷ 100))   si la règle est liée à une dimension et qu'un diagnostic est terminé, sinon 0
+bonus_dimension    = arrondi(10 × (1 − Sd ÷ 100))   si la règle est liée à une dimension CALCULABLE du dernier diagnostic terminé, sinon 0
 priority_score     = min(100, base + bonus_dimension)
 ```
 
@@ -287,8 +386,9 @@ Libellés : Critique ≥ 90 · Haute 70 à 89 · Moyenne 45 à 69 · Faible < 45
 | Code | Condition (sur `Facts`) | Sujet | Sévérité | Dimension | Impact |
 |---|---|---|---|---|---|
 | `RESULT_NEGATIVE` | `Re < 0` | org | critical | D3 | qualitatif, avec le montant du déficit |
-| `PRICE_BELOW_FLOOR` | prix actuel < prix plancher (scénario de référence) | service | critical | D3 | perte par vente × volume si connu |
-| `PRICE_UNDER` | −20 % < écart ≤ −10 % → medium ; écart ≤ −20 % → high | service | medium/high | D3 | manque à gagner annuel si volume connu |
+| `PRICE_BELOW_FLOOR` | prix actuel < prix plancher (scénario de référence de la dernière simulation **finalisée**) | service | critical | D3 | perte par vente × volume si connu |
+| `PRICE_UNDER` | même source ; −20 % < écart ≤ −10 % → medium ; écart ≤ −20 % → high | service | medium/high | D3 | manque à gagner annuel si volume connu |
+| `PRICING_DRIFT` | simulation finalisée dont le coût horaire ou `tv` figés s'écartent de plus de 5 % des valeurs actuelles | service | info | D3 | aucun (« à revalider ») |
 | `MAINT_UNPROFITABLE` | résultat mensuel par contrat < 0 | offer | high | D5 | perte mensuelle × contrats |
 | `MAINT_LOW_MARGIN` | 0 ≤ marge sur prix de vente < 20 % | offer | medium | D5 | qualitatif |
 | `RECURRING_SHARE_LOW` | part déclarée < 20 % | org | high | D5 | qualitatif |
@@ -298,19 +398,22 @@ Libellés : Critique ≥ 90 · Haute 70 à 89 · Moyenne 45 à 69 · Faible < 45
 | `HOURLY_ASSUMPTIONS` | coût horaire calculé avec des hypothèses par défaut | org | info | D3 | aucun |
 | `TARGET_GAP` | objectif > CA annualisé × 1,3 | org | medium | D6 | écart en € (déclaré) |
 | `CAPACITY_RECURRING_HIGH` | heures de récurrent > 30 % de la capacité | org | medium | D4 | qualitatif |
-| `DIM_LOW_<D1…D6>` | score de la dimension < 40 | dimension | high si < 25, sinon medium | Dx | qualitatif, recommandation spécifique à la dimension |
+| `DIM_LOW_<D1…D6>` | dimension **calculable** et score < 40 | dimension | high si < 25, sinon medium | Dx | qualitatif, recommandation spécifique à la dimension |
+| `DIAG_LOW_RELIABILITY` | dernier diagnostic avec une dimension non calculable ou une fiabilité globale < 0,75 | org | info | — | aucun (« compléter ou refaire le diagnostic ») |
 | `PROFILE_INCOMPLETE` | complétude < 60 % | org | info | — | aucun |
 | `NO_DIAGNOSTIC` | aucun diagnostic terminé | org | info | — | aucun |
-| `NO_PRICING` | aucune simulation pour une prestation active | org | info | D3 | aucun |
+| `NO_PRICING` | aucune simulation **finalisée** pour une prestation active | org | info | D3 | aucun |
 
 Chaque règle définit en code son titre, son explication paramétrée (avec les valeurs de `evidence`), sa difficulté, ses modules concernés et 2 à 5 actions concrètes. Un impact chiffré n'apparaît **que** dans les cas indiqués « chiffré » ci-dessus, avec le détail de son calcul.
 
-**Cas RULE-1** : PR-1 défini comme scénario de référence de « Site vitrine », volume de 8, aucun diagnostic.
+**Cas RULE-1** : simulation « Site vitrine » finalisée avec PR-1 comme scénario de référence, volume de 8, aucun diagnostic.
 → `PRICE_UNDER` (sujet `service:<id>`). L'écart est de −19,4 %, donc compris entre −20 % et −10 % : sévérité **medium**, `priority_score` = **45**. Impact chiffré : manque à gagner de **6 164,71 €/an**.
 
 **Cas RULE-2** : avec un diagnostic où D3 = 40 → bonus = arrondi(10 × 0,6) = 6, d'où `priority_score` = **51**.
 
-**Cas RULE-3** : prix relevé à 4 000 € → la condition n'est plus vraie et la recommandation passe en `auto_resolved`.
+**Cas RULE-3** : prix du catalogue relevé à 4 000 € → la condition n'est plus vraie et la recommandation passe en `auto_resolved`.
+
+**Cas RULE-4** : PR-1 encore en **brouillon** → aucune règle de prix ne se déclenche, seulement `NO_PRICING`.
 
 ---
 
