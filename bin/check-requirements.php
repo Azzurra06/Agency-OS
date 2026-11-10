@@ -26,7 +26,12 @@ $check = static function (string $label, bool $ok, string $detail = '', bool $bl
     printf("[%s] %s%s\n", $ok ? ' OK ' : ($blocking ? 'ÉCHEC' : 'AVERT'), $label, $detail === '' ? '' : ' — ' . $detail);
 };
 
-$check('PHP ≥ 8.2', PHP_VERSION_ID >= 80200, PHP_VERSION);
+// Version minimale lue dans composer.json (source unique de l'exigence).
+$composer = json_decode((string) file_get_contents(dirname(__DIR__) . '/composer.json'), true);
+$constraint = is_array($composer) && isset($composer['require']) && is_array($composer['require']) && is_string($composer['require']['php'] ?? null)
+    ? $composer['require']['php'] : '>=8.2';
+$minimum = preg_match('/(\d+\.\d+(?:\.\d+)?)/', $constraint, $m) === 1 ? $m[1] : '8.2';
+$check('PHP ≥ ' . $minimum, version_compare(PHP_VERSION, $minimum, '>='), PHP_VERSION);
 foreach (['bcmath', 'pdo_mysql', 'openssl', 'mbstring', 'json'] as $ext) {
     $check("Extension {$ext}", extension_loaded($ext));
 }
