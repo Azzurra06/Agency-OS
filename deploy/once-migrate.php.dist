@@ -1,0 +1,52 @@
+<?php
+// Agency OS — script de déploiement À USAGE UNIQUE : vérifie les exigences, applique les migrations, puis s'efface.
+// Protégé par un jeton aléatoire de 256 bits (seule son empreinte figure ici), accessible en POST uniquement.
+declare(strict_types=1);
+const TOKEN_SHA256 = '__SHA256_DU_JETON__'; // remplacé au moment du déploiement
+if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST' || !hash_equals(TOKEN_SHA256, hash('sha256', (string) ($_POST['token'] ?? '')))) {
+    http_response_code(404);
+    exit;
+}
+header('Content-Type: application/json; charset=utf-8');
+header('Cache-Control: no-store');
+$out = ['php' => PHP_VERSION, 'sapi' => PHP_SAPI, 'checks' => [], 'migrations' => [], 'error' => null];
+foreach (['bcmath', 'pdo_mysql', 'openssl', 'mbstring', 'json', 'ctype'] as $ext) {
+    $out['checks'][$ext] = extension_loaded($ext);
+}
+$out['checks']['aes-256-gcm'] = in_array('aes-256-gcm', openssl_get_cipher_methods(), true);
+$out['checks']['php>=8.2'] = version_compare(PHP_VERSION, '8.2', '>=');
+foreach (['storage/logs', 'storage/sessions', 'storage/mail-capture', 'storage/backups', 'storage/cache'] as $dir) {
+    $out['checks']['writable:' . $dir] = is_dir(__DIR__ . '/' . $dir) && is_writable(__DIR__ . '/' . $dir);
+}
+try {
+    require __DIR__ . '/app/bootstrap.php';
+    $app = \App\Boot::createApp();
+    $out['profile'] = $app->config->profile . '/' . $app->config->env;
+    $db = $app->db();
+    $db->pdo()->exec('CREATE TABLE IF NOT EXISTS schema_migrations (version VARCHAR(100) NOT NULL PRIMARY KEY, checksum CHAR(64) NOT NULL, applied_at DATETIME NOT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci');
+    $applied = [];
+    foreach ($db->fetchAll('SELECT version, checksum FROM schema_migrations') as $row) {
+        $applied[(string) $row['version']] = (string) $row['checksum'];
+    }
+    $migrator = new \App\Infrastructure\Database\Migrator($db, __DIR__ . '/database/migrations');
+    foreach ($migrator->files() as $version => $path) {
+        $sql = (string) file_get_contents($path);
+        $checksum = hash('sha256', $sql);
+        if (isset($applied[$version])) {
+            if (!hash_equals($applied[$version], $checksum)) {
+                throw new RuntimeException('Migration modifiée après application : ' . $version);
+            }
+            continue;
+        }
+        foreach (\App\Infrastructure\Database\Migrator::splitStatements($sql) as $statement) {
+            $db->pdo()->exec($statement);
+        }
+        $db->run('INSERT INTO schema_migrations (version, checksum, applied_at) VALUES (:v, :c, UTC_TIMESTAMP())', ['v' => $version, 'c' => $checksum]);
+        $out['migrations'][] = $version;
+    }
+    $out['tables'] = count($db->fetchAll('SHOW TABLES'));
+} catch (Throwable $e) {
+    $out['error'] = get_class($e) . ': ' . preg_replace('/(password|pass|pwd)[^,)]*/i', '[redacted]', $e->getMessage());
+}
+$out['self_deleted'] = @unlink(__FILE__);
+echo json_encode($out, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);

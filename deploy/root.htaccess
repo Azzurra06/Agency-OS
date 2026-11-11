@@ -1,0 +1,15 @@
+# Agency OS — .htaccess de la RACINE du site sur un hébergement mutualisé dont la racine web ne peut pas pointer
+# vers public_html/ (cas Hostinger) : toute requête est servie par public_html/ ; code, configuration, clés et
+# journaux restent hors d'atteinte (chaque répertoire garde en plus son propre « Require all denied »).
+Options -Indexes -MultiViews
+ServerSignature Off
+# Pas de redirection automatique « /app » → « /app/ » vers les répertoires du code : le routage est fait par l'application.
+DirectorySlash Off
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^public_html/ - [L]
+    RewriteRule ^(.*)$ public_html/$1 [L]
+</IfModule>
+<IfModule !mod_rewrite.c>
+    Require all denied
+</IfModule>

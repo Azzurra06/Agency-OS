@@ -57,8 +57,8 @@
 | Phase 4, lot 3 | Pricing (simulateur, aperçus, finalisation, versions) | code et tests (§8) | ✅ validé |
 | Phase 4, lot 4 | Revenus récurrents (offres, contrats, scénarios, projections) | code et tests (§9) | ✅ validé |
 | Phase 4, lot 5 | Stratégie (moteur de règles, sources des recommandations, plan d'action) | code et tests (§10) | ✅ validé |
-| **Phase 4, lot 6** | Dashboard complet, historique, méthodologie, RGPD (export et suppression, utiles aux comptes de test), pages légales du portfolio | code et tests (§11) | ⏳ livré, à valider |
-| Phase 5 | Tests de sécurité (locaux) ; déploiement **portfolio** sur Hostinger, avec ton accord pour chaque action ; checklist de mise en ligne du portfolio | runbooks et checklist | — |
+| Phase 4, lot 6 | Dashboard complet, historique, méthodologie, RGPD (export et suppression, utiles aux comptes de test), pages légales du portfolio | code et tests (§11) | ✅ validé |
+| **Phase 5** | Tests de sécurité (locaux) ; déploiement **portfolio** sur Hostinger, avec ton accord pour chaque action ; checklist de mise en ligne du portfolio | `09-deploiement.md` (runbook et vérifications) | ⏳ en ligne le 11/11/2026, à valider |
 | **Plus tard** | **SaaS commercial** : choix de l'infrastructure isolée, A3, A5, A6, A7, A8 et A9, revue de sécurité complète, checklist « données réelles », documents RGPD définitifs, éventuellement facturation | — | ⏸ |
 
 ## 5. Lot 0 : ce qui a été livré (10/11/2026)

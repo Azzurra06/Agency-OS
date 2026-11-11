@@ -54,6 +54,13 @@ final class ConfigTest extends TestCase
         Config::fromEnv(Env::fromArray($overrides + self::base()), '/srv/app');
     }
 
+    /** Régression (déploiement du 11/11/2026) : « KEYS_PATH= » vide doit donner le chemin par défaut, jamais un chemin vide. */
+    public function testEmptyKeysPathFallsBackToDefault(): void
+    {
+        self::assertSame('/srv/app/config/keys', Config::fromEnv(Env::fromArray(['KEYS_PATH' => ''] + self::base()), '/srv/app')->keysPath);
+        self::assertSame('/srv/keys', Config::fromEnv(Env::fromArray(['KEYS_PATH' => '/srv/keys'] + self::base()), '/srv/app')->keysPath);
+    }
+
     public function testEnvFileParsing(): void
     {
         $file = tempnam(sys_get_temp_dir(), 'env');

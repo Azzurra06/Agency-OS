@@ -115,12 +115,13 @@ final class StrategyRepository extends OrgScopedRepository
                 $this->scopedExecute(
                     $org,
                     'UPDATE recommendations SET status = :status, severity = :sev, priority_score = :prio, dimension_code = :dim, rule_version = :v, evidence_enc = :ev,
-                            impact_kind = :kind, impact_amount_enc = :impact, data_quality = :q, last_evaluated_at = :now, resolved_at = IF(:st2 = \'new\', NULL, resolved_at),
-                            reappeared = COALESCE(:re, reappeared), dismissed_severity = IF(:st3 = \'new\', NULL, dismissed_severity)
+                            impact_kind = :kind, impact_amount_enc = :impact, data_quality = :q, last_evaluated_at = :now, resolved_at = IF(:reset1 = 1, NULL, resolved_at),
+                            reappeared = COALESCE(:re, reappeared), dismissed_severity = IF(:reset2 = 1, NULL, dismissed_severity)
                       WHERE id = :id AND organization_id = :org',
                     ['status' => $newStatus, 'sev' => $f->severity, 'prio' => $f->priority, 'dim' => $f->dimension, 'v' => $ruleVersion]
                     + $this->payload($org, $publicId, $f)
-                    + ['q' => $f->dataQuality, 'now' => $now, 'st2' => $newStatus === $status ? 'keep' : $newStatus, 're' => $reappeared, 'st3' => $newStatus === $status ? 'keep' : $newStatus, 'id' => TypedArray::int($row, 'id')],
+                    + ['q' => $f->dataQuality, 'now' => $now, 'reset1' => (int) ($newStatus !== $status && $newStatus === 'new'), 're' => $reappeared,
+                       'reset2' => (int) ($newStatus !== $status && $newStatus === 'new'), 'id' => TypedArray::int($row, 'id')],
                 );
                 $counts['updated']++;
             }
@@ -144,8 +145,10 @@ final class StrategyRepository extends OrgScopedRepository
         $this->scopedExecute(
             $org,
             'UPDATE recommendations SET status = :status, snoozed_until = :until, dismissed_severity = :dsev,
-                    resolved_at = IF(:st2 = \'done\', :now, NULL), reappeared = IF(:st3 = \'new\', reappeared, 0) WHERE id = :id AND organization_id = :org',
-            ['status' => $status, 'until' => $snoozedUntil, 'dsev' => $dismissedSeverity, 'st2' => $status, 'now' => $this->now(), 'st3' => $status, 'id' => $id],
+                    resolved_at = :resolved, reappeared = IF(:keep = 1, reappeared, 0) WHERE id = :id AND organization_id = :org',
+            // Comparaisons faites en PHP : aucune comparaison paramètre / littéral texte en SQL (collations différentes selon le serveur).
+            ['status' => $status, 'until' => $snoozedUntil, 'dsev' => $dismissedSeverity, 'resolved' => $status === 'done' ? $this->now() : null,
+             'keep' => (int) ($status === 'new'), 'id' => $id],
         );
     }
 

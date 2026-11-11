@@ -10,8 +10,10 @@ ServerSignature Off
     # Fichiers cachés et sensibles : refusés
     RewriteRule (^|/)\. - [F,L]
     RewriteRule \.(sql|log|bak|env|ini|sh|md|lock|dist|cnf|key|yml|yaml|neon|phar|zip|gz)$ - [F,L,NC]
-    # Seuls index.php et assets/ sont servis tels quels ; tout le reste passe par le contrôleur frontal
-    RewriteCond %{REQUEST_URI} !^/assets/
+    # Seuls index.php et assets/ sont servis tels quels ; tout le reste passe par le contrôleur frontal.
+    # Motif relatif au répertoire (et non %{REQUEST_URI}) : fiable aussi quand la racine du site réécrit vers public_html/
+    # (Apache comme LiteSpeed).
+    RewriteRule ^assets/ - [L]
     RewriteRule ^ index.php [L,QSA]
 </IfModule>
 
@@ -34,3 +36,4 @@ ServerSignature Off
 </IfModule>
 
 AddType font/woff2 .woff2
+AddType text/javascript .js

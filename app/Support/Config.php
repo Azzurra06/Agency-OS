@@ -75,7 +75,8 @@ final class Config
             sessionIdleMinutes: $env->int('SESSION_IDLE_MINUTES', 60),
             sessionAbsoluteHours: $env->int('SESSION_ABSOLUTE_HOURS', 12),
             cryptoProvider: $env->get('CRYPTO_PROVIDER', 'openssl') ?? 'openssl',
-            keysPath: $env->get('KEYS_PATH', $basePath . '/config/keys') ?? $basePath . '/config/keys',
+            // Vide = valeur par défaut (documenté dans config/.env.example) : jamais un chemin vide.
+            keysPath: ($env->get('KEYS_PATH') ?? '') !== '' ? (string) $env->get('KEYS_PATH') : $basePath . '/config/keys',
             mailTransport: $env->get('MAIL_TRANSPORT', 'capture') ?? 'capture',
             mailFrom: $env->get('MAIL_FROM', 'no-reply@example.invalid') ?? 'no-reply@example.invalid',
             mailAllowlist: $env->get('MAIL_ALLOWLIST', '') ?? '',

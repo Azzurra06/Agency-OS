@@ -23,7 +23,7 @@ SaaS de pilotage stratégique et financier pour petites agences web et digitales
 | 4 — Lot 4 : revenus récurrents | code `app/`, `tests/` | Validé |
 | 4 — Lot 5 : stratégie | code `app/`, `tests/` | Validé |
 | **4 — Lot 6 : historique, méthodologie, RGPD, pages légales** | code `app/`, `tests/` | Livré |
-| 5 — Tests et déploiement | — | À venir |
+| **5 — Tests et déploiement** | [docs/09-deploiement.md](docs/09-deploiement.md) · https://agency-os.azzurra-pro.com | En ligne |
 
 ## Stack
 
