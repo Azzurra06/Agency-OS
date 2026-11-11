@@ -44,7 +44,7 @@ details.advanced[open] > summary { margin-bottom: var(--space-4); }
 .summary-item .num { font-weight: 600; font-size: var(--text-h2); }
 .service-row td { vertical-align: middle; }
 .service-row .input { min-height: 34px; }
-.table-wrap { overflow-x: auto; }
+.table-wrap { overflow-x: auto; position: relative; } /* relative : contient les textes .visually-hidden (position absolue) dans la zone défilante */
 
 .flash { padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); font-size: var(--text-small); border: 1px solid; }
 .flash--error { background: var(--color-danger-subtle); border-color: #F5C2C2; color: #7F1D1D; }
@@ -249,3 +249,13 @@ dialog.dialog::backdrop { background: rgba(23, 23, 28, 0.35); }
 .glossary__body p { margin: 0; }
 .glossary__example { font-size: var(--text-small); padding: var(--space-2) var(--space-3); border-left: 3px solid var(--color-accent); background: var(--color-surface-sunken); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
 [data-glossary-group][hidden], [data-glossary-item][hidden] { display: none; }
+
+/* ---------- Mobile : aucun débordement horizontal ---------- */
+.task-add { max-width: 100%; min-width: 0; }
+.action-item__controls { align-self: stretch; min-width: 0; }
+.task-add .input { flex: 1 1 auto; min-width: 0; }
+.nature { max-width: 100%; }
+@media (max-width: 480px) {
+  .nature { white-space: normal; height: auto; min-height: 20px; padding-top: 2px; padding-bottom: 2px; line-height: 1.3; }
+  .task-add { flex: 1 1 100%; }
+}
