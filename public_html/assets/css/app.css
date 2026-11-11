@@ -62,14 +62,61 @@ dialog.dialog::backdrop { background: rgba(23, 23, 28, 0.35); }
 .public-card .btn { align-self: flex-start; }
 .public-actions { display: flex; gap: var(--space-3); flex-wrap: wrap; }
 
+/* ---------- Diagnostic (lot 2) ---------- */
+.diag-grid { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: var(--space-7); align-items: start; }
+.diag-aside { position: sticky; top: calc(var(--banner-height, 0px) + var(--space-5)); display: flex; flex-direction: column; gap: var(--space-4); }
+.steps__link { display: flex; align-items: center; gap: var(--space-3); color: inherit; text-decoration: none; width: 100%; }
+.steps__link:hover .steps__label { text-decoration: underline; }
+.question { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-3); }
+.question[hidden] { display: none; }
+.question + .question { margin-top: var(--space-4); }
+.alert[hidden] { display: none; }
+.question legend { font-family: var(--font-heading); font-weight: 600; font-size: var(--text-h3); line-height: var(--lh-h3); margin-bottom: var(--space-2); padding: 0; }
+.question__note { display: flex; gap: var(--space-2); align-items: flex-start; font-size: var(--text-small); color: var(--color-text-tertiary); padding-left: calc(18px + var(--space-3) + var(--space-4)); }
+.question__hint { margin: 0; }
+.diag-nav { display: flex; justify-content: space-between; gap: var(--space-3); padding-top: var(--space-5); border-top: 1px solid var(--color-border); flex-wrap: wrap; }
+.diag-summary { display: flex; align-items: center; gap: var(--space-5); flex-wrap: wrap; }
+.diag-summary__cta { margin-left: auto; }
+.diag-level { font-family: var(--font-heading); font-weight: 600; font-size: var(--text-h3); }
+.diag-draft-actions { margin-top: var(--space-3); }
+.diag-hero { display: flex; align-items: center; gap: var(--space-6); }
+.score-ring--lg { width: 128px; height: 128px; }
+.score-ring--lg::before { inset: 11px; }
+.score-ring--lg .score-ring__value { font-size: 2.25rem; }
+.chart-box { position: relative; height: 220px; }
+.chart-box--radar { height: 300px; }
+.diag-focus { display: flex; justify-content: space-between; gap: var(--space-3); padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); background: var(--color-surface-sunken); }
+.diag-focus .num { font-weight: 600; }
+.diag-focus__title { display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-body); }
+.diag-dim { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-4) 0; border-bottom: 1px solid var(--color-border); }
+.diag-dim:last-child { border-bottom: 0; }
+.diag-dim__head { display: flex; justify-content: space-between; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+.diag-dim__label { font-weight: 500; }
+.diag-dim__value { display: inline-flex; align-items: center; gap: var(--space-2); font-size: var(--text-small); }
+.diag-dim__value .num { font-weight: 600; font-size: var(--text-body); }
+.diag-missing { margin: 0; padding-left: var(--space-5); }
+.kpi__ring { display: flex; align-items: center; gap: var(--space-4); }
+.kpi__ring .score-ring { width: 72px; height: 72px; }
+.kpi__ring .score-ring::before { inset: 7px; }
+.kpi__ring .score-ring__value { font-size: 1.25rem; }
+
 @media (max-width: 1023px) {
   .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .kpi-grid > :last-child { grid-column: 1 / -1; }
   .dash-grid { grid-template-columns: minmax(0, 1fr); }
   .form-grid--3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .diag-grid { grid-template-columns: minmax(0, 1fr); gap: var(--space-5); }
+  .diag-aside { position: static; }
+  .steps { flex-direction: row; overflow-x: auto; }
+  .steps li { flex: none; }
 }
 @media (max-width: 767px) {
   .kpi-grid, .form-grid, .form-grid--3, .target { grid-template-columns: minmax(0, 1fr); }
   .public-card { padding: var(--space-5); }
   .toast-region { left: var(--space-4); right: var(--space-4); bottom: calc(var(--tabbar-height) + var(--space-3)); }
+  .steps .steps__label { display: none; }
+  .steps li[aria-current="step"] .steps__label { display: inline; }
+  .question__note { padding-left: 0; }
+  .diag-hero { flex-direction: column; align-items: flex-start; }
+  .diag-summary__cta { margin-left: 0; }
 }

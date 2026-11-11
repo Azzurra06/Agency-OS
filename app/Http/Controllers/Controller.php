@@ -80,4 +80,24 @@ abstract class Controller
     {
         return Response::html(View::render($template, $data + ['csrf' => $this->csrfToken()], $layout));
     }
+
+    /**
+     * Page de l'application authentifiée (gabarit commun : organisation, bandeau démo).
+     *
+     * @param array<string, mixed> $data
+     */
+    protected function screen(Request $request, string $template, string $nav, string $title, array $data): Response
+    {
+        $org = $this->org($request);
+        $auth = $this->auth($request);
+
+        return $this->page($template, $data + [
+            'title' => $title,
+            'nav' => $nav,
+            'org' => $this->app->organizations()->get($org),
+            'isDemo' => $auth->isDemo,
+            'demoExpiresAt' => $auth->demoExpiresAt?->format('Y-m-d\TH:i:s\Z'),
+            'demoRemaining' => $auth->demoExpiresAt === null ? null : max(0, $auth->demoExpiresAt->getTimestamp() - $this->app->clock()->nowUtc()->getTimestamp()),
+        ]);
+    }
 }

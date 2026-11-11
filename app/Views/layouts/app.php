@@ -7,6 +7,8 @@
 /** @var bool $isDemo */
 /** @var string|null $demoExpiresAt */
 /** @var int|null $demoRemaining */
+/** @var bool $charts */
+$charts ??= false;
 $navItems = [
     'vue' => ['/app', 'layout-dashboard', 'Vue d\'ensemble', 'Vue'],
     'diagnostic' => ['/app/diagnostic', 'clipboard-check', 'Diagnostic', 'Diagnostic'],
@@ -27,6 +29,7 @@ $remainingLabel = $demoRemaining === null ? '' : sprintf('%d h %02d', intdiv($de
   <link rel="stylesheet" href="/assets/css/components.css">
   <link rel="stylesheet" href="/assets/css/layout.css">
   <link rel="stylesheet" href="/assets/css/app.css">
+  <?php if ($charts): ?><script src="/assets/vendor/chart-4.4.4.umd.min.js" defer></script><?php endif; ?>
   <script src="/assets/js/app.js" type="module"></script>
 </head>
 <body>

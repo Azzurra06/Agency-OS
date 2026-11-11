@@ -2,6 +2,7 @@
 /** @var array<string, mixed> $derived */
 /** @var list<array{name: string, current_price: string|null}> $services */
 /** @var bool $isDemo */
+/** @var array{draft: array{dimensions_done: int, dimensions: int}|null, latest: array{public_id: string, completed_at: string, global_display: string|null, level: string|null, reliability_label: string|null}|null} $diagnostic */
 use App\Support\FinanceFields;
 use App\Support\Format;
 
@@ -27,6 +28,8 @@ $period = $derived['period'];
 $completeness = $derived['completeness'];
 
 $targetPct = $target['progress_pct'] ?? null;
+$latestDiag = $diagnostic['latest'];
+$draftDiag = $diagnostic['draft'];
 $hourlyLabel = $hourly['assumptions'] === [] ? 'Calculé' : sprintf('Calculé, %d hypothèse%s', count($hourly['assumptions']), count($hourly['assumptions']) > 1 ? 's' : '');
 ?>
 <header class="page-header">
@@ -54,10 +57,33 @@ $hourlyLabel = $hourly['assumptions'] === [] ? 'Calculé' : sprintf('Calculé, %
     <?php endif; ?>
   </article>
 
-  <article class="card kpi kpi--empty">
-    <div class="kpi__top"><div class="card__title"><h2 class="kpi__label">Maturité business</h2><?= ui_tip('tip-maturity', 'Maturité business', 'Maturité business', 'Score sur 100 issu du diagnostic, moyenne des six dimensions à poids égaux. Autoévaluation indicative.') ?></div></div>
-    <p class="kpi__value">À venir</p>
-    <div class="kpi__meta"><span>Le diagnostic de maturité arrive avec le prochain module.</span></div>
+  <article class="card kpi<?php if ($latestDiag === null): ?> kpi--empty<?php endif; ?>">
+    <div class="kpi__top">
+      <div class="card__title"><h2 class="kpi__label">Maturité business</h2><?= ui_tip('tip-maturity', 'Maturité business', 'Maturité business', 'Score sur 100 issu du dernier diagnostic terminé, moyenne des six dimensions à poids égaux. Autoévaluation indicative.') ?></div>
+      <?php if ($latestDiag !== null): ?><?= ui_nature('frozen', 'Figé le ' . Format::date(substr((string) $latestDiag['completed_at'], 0, 10))) ?><?php endif; ?>
+    </div>
+    <?php if ($latestDiag === null): ?>
+      <p class="kpi__value">Pas encore évaluée</p>
+      <div class="kpi__meta">
+        <?php if ($draftDiag !== null): ?>
+          <span>Diagnostic en cours : <?= e($draftDiag['dimensions_done']) ?>/<?= e($draftDiag['dimensions']) ?> dimensions.</span><a href="/app/diagnostic">Reprendre</a>
+        <?php else: ?>
+          <span>Faites le diagnostic en 10 minutes.</span><a href="/app/diagnostic">Commencer</a>
+        <?php endif; ?>
+      </div>
+    <?php elseif ($latestDiag['global_display'] !== null): ?>
+      <div class="kpi__ring">
+        <div class="score-ring" data-value="<?= attr($latestDiag['global_display']) ?>"><span class="score-ring__value"><?= e($latestDiag['global_display']) ?></span></div>
+        <div class="stack stack--sm"><p class="diag-level"><?= e($latestDiag['level']) ?></p><span class="text-small text-secondary"><?= e($latestDiag['reliability_label']) ?></span></div>
+      </div>
+      <div class="kpi__meta"><a href="/app/diagnostic/resultats/<?= attr($latestDiag['public_id']) ?>">Voir le détail</a></div>
+    <?php else: ?>
+      <div class="kpi__ring">
+        <div class="score-ring score-ring--partial"><span class="score-ring__value">—</span></div>
+        <div class="stack stack--sm"><p class="diag-level">Diagnostic partiel</p><span class="text-small text-secondary">Score global disponible lorsque les 6 dimensions sont renseignées.</span></div>
+      </div>
+      <div class="kpi__meta"><a href="/app/diagnostic/resultats/<?= attr($latestDiag['public_id']) ?>">Compléter</a></div>
+    <?php endif; ?>
   </article>
 
   <article class="card kpi kpi--empty">

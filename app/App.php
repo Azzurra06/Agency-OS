@@ -7,6 +7,7 @@ namespace App;
 use App\Application\AuthService;
 use App\Application\CatalogService;
 use App\Application\DemoService;
+use App\Application\DiagnosticService;
 use App\Application\FinancialProfileService;
 use App\Cron\CronRunner;
 use App\Cron\Jobs\PurgeDemoJob;
@@ -15,6 +16,7 @@ use App\Cron\Jobs\PurgeSecurityEventsJob;
 use App\Http\Kernel;
 use App\Http\Routes;
 use App\Infrastructure\Database\Connection;
+use App\Infrastructure\Repositories\DiagnosticRepository;
 use App\Infrastructure\Repositories\FinancialProfileRepository;
 use App\Infrastructure\Repositories\OrganizationRepository;
 use App\Infrastructure\Repositories\ServiceRepository;
@@ -162,10 +164,20 @@ class App
         ));
     }
 
+    public function diagnosticRepository(): DiagnosticRepository
+    {
+        return $this->resolve('diagnostic_repository', fn () => new DiagnosticRepository($this->db(), $this->clock()));
+    }
+
+    public function diagnostics(): DiagnosticService
+    {
+        return $this->resolve('diagnostics', fn () => new DiagnosticService($this->diagnosticRepository(), $this->organizations(), $this->financialProfiles()));
+    }
+
     public function demos(): DemoService
     {
         return $this->resolve('demos', fn () => new DemoService(
-            $this->db(), $this->financialProfiles(), $this->serviceRepository(),
+            $this->db(), $this->financialProfiles(), $this->serviceRepository(), $this->diagnostics(),
             $this->rateLimiter(), $this->securityEvents(), $this->sessions(), $this->clock(),
         ));
     }

@@ -29,10 +29,24 @@ final class DemoService
     public const PER_IP_PER_HOUR = 5;
     public const MAX_SERVICES = 30;
 
+    /**
+     * Réponses fictives de Lumen au questionnaire v1 (cas DIAG-1 de docs/03 §6.3) : score 58, forces Fidélisation
+     * et Organisation, axes Stratégie et Rentabilité ; « Je ne sais pas » (inconnue) sur la dépendance au dirigeant.
+     */
+    public const LUMEN_DIAGNOSTIC = [
+        'pos.target' => 'n2', 'pos.specialisation' => 'n2', 'pos.packaged_offers' => 'n1', 'pos.differentiation' => 'n2', 'pos.portfolio_fit' => 'n1',
+        'acq.lead_sources' => 'n2', 'acq.sales_process' => 'n2', 'acq.conversion' => 'n2', 'acq.pipeline' => 'n2', 'acq.visibility' => 'n2',
+        'fin.pricing_method' => 'n1', 'fin.hourly_cost' => 'n2', 'fin.time_tracking' => 'n1', 'fin.project_profitability' => 'n1', 'fin.steering' => 'n1',
+        'org.production_process' => 'n3', 'org.project_tools' => 'n2', 'org.scope_changes' => 'n2', 'org.roles' => 'n2', 'org.owner_dependency' => 'unknown',
+        'ret.maintenance_offer' => 'n2', 'ret.renewal' => 'n3', 'ret.contract_review' => 'n2', 'ret.upsell' => 'n3', 'ret.satisfaction' => 'n2',
+        'str.objectives' => 'n1', 'str.vision' => 'n1', 'str.review' => 'n1', 'str.capacity_plan' => 'n1', 'str.market_watch' => 'n1',
+    ];
+
     public function __construct(
         private readonly Connection $db,
         private readonly FinancialProfileService $profiles,
         private readonly ServiceRepository $services,
+        private readonly DiagnosticService $diagnostics,
         private readonly RateLimiter $limiter,
         private readonly SecurityEventLogger $events,
         private readonly SessionManager $sessions,
@@ -98,7 +112,7 @@ final class DemoService
     public function reset(OrgId $org, int $userId): void
     {
         $this->db->transaction(function () use ($org): void {
-            foreach (['financial_profile_changes', 'financial_profiles', 'services'] as $table) {
+            foreach (['diagnostics', 'financial_profile_changes', 'financial_profiles', 'services'] as $table) {
                 $this->db->run("DELETE FROM {$table} WHERE organization_id = :org", ['org' => $org->value]);
             }
             $this->db->run(
@@ -173,6 +187,12 @@ final class DemoService
         ] as [$name, $category, $price, $volume]) {
             $this->services->create($org, $name, $category, $price === null ? null : Decimal::of($price), $volume);
         }
+
+        $draft = $this->diagnostics->startOrResume($org, $userId);
+        foreach (self::LUMEN_DIAGNOSTIC as $question => $option) {
+            $this->diagnostics->answer($org, $draft['public_id'], ['question' => $question, 'option' => $option]);
+        }
+        $this->diagnostics->complete($org, $draft['public_id']);
     }
 
     private function now(): string

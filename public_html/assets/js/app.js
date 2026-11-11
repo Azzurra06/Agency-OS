@@ -1,5 +1,5 @@
 /*
- * Agency OS — scripts de l'application (lot 1).
+ * Agency OS — scripts de l'application (lots 1 et 2).
  * Règles (docs/04-securite.md §5) : aucun innerHTML ni eval, aucune formule métier (le serveur calcule),
  * aucune donnée financière dans le stockage du navigateur. Compatible CSP stricte et Trusted Types.
  */
@@ -200,6 +200,148 @@ document.querySelector('[data-finish-onboarding]')?.addEventListener('click', as
     toast(result.error?.message ?? 'Erreur.');
   }
 });
+
+/* ---------- Diagnostic : démarrage, abandon du brouillon ---------- */
+document.querySelectorAll('[data-diagnostic-start]').forEach((button) => {
+  button.addEventListener('click', async () => {
+    button.setAttribute('aria-busy', 'true');
+    const body = button.dataset.from ? { from: button.dataset.from } : {};
+    const result = await api('POST', '/api/v1/diagnostics', body);
+    if (result.ok) {
+      window.location.assign('/app/diagnostic/questionnaire?etape=1');
+    } else {
+      button.removeAttribute('aria-busy');
+      toast(result.error?.message ?? 'Erreur.');
+    }
+  });
+});
+
+document.querySelector('[data-diagnostic-discard]')?.addEventListener('click', async (event) => {
+  const id = event.currentTarget.dataset.diagnosticDiscard;
+  if (!(await confirmAction('Abandonner le brouillon ?', 'Les réponses de ce diagnostic en cours seront supprimées. Les diagnostics terminés sont conservés.', 'Abandonner le brouillon'))) return;
+  const result = await api('DELETE', `/api/v1/diagnostics/${encodeURIComponent(id)}`);
+  if (result.ok) window.location.reload(); else toast(result.error?.message ?? 'Erreur.');
+});
+
+/* ---------- Diagnostic : sauvegarde automatique de chaque réponse ---------- */
+const diagForm = document.querySelector('[data-diagnostic-form]');
+if (diagForm) {
+  const id = diagForm.dataset.id;
+  const status = document.querySelector('[data-save-status]');
+  const setStatus = (text, ok) => {
+    if (!status) return;
+    status.textContent = text;
+    status.classList.toggle('inline-status--ok', ok === true);
+  };
+  const time = new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  let pending = Promise.resolve();
+  let sequence = 0;
+
+  const applyProgress = (progress) => {
+    const applicable = new Set(progress.applicable_questions);
+    // Questions conditionnelles : affichées ou masquées selon les réponses (règles calculées par le serveur).
+    diagForm.querySelectorAll('[data-question]').forEach((fieldset) => {
+      fieldset.hidden = !applicable.has(fieldset.dataset.question);
+    });
+    const bar = document.querySelector('[data-diag-progress]');
+    if (bar) {
+      bar.setAttribute('aria-valuenow', String(progress.answered));
+      bar.setAttribute('aria-valuemax', String(progress.applicable));
+      const pct = progress.applicable === 0 ? 0 : Math.floor((100 * progress.answered) / progress.applicable);
+      bar.querySelector('.progress__bar')?.style.setProperty('--value', String(pct));
+    }
+    for (const [code, d] of Object.entries(progress.by_dimension)) {
+      const step = document.querySelector(`[data-step-code="${CSS.escape(code)}"]`);
+      if (step && !step.hasAttribute('aria-current')) {
+        const done = d.applicable > 0 && d.answered === d.applicable;
+        if (done) step.dataset.state = 'done'; else delete step.dataset.state;
+      }
+    }
+    const remaining = document.querySelector('[data-diag-remaining]');
+    if (remaining) {
+      remaining.textContent = progress.ready
+        ? 'Toutes les questions ont une réponse : vous pouvez terminer le diagnostic.'
+        : `${progress.answered} réponse(s) sur ${progress.applicable}. Vous pourrez terminer quand toutes les questions auront une réponse (« Je ne sais pas » compris).`;
+    }
+  };
+
+  diagForm.addEventListener('change', (event) => {
+    const input = event.target;
+    if (!(input instanceof HTMLInputElement) || input.type !== 'radio') return;
+    const fieldset = input.closest('[data-question]');
+    fieldset?.querySelector('.question__hint')?.remove(); // la suggestion du profil devient une réponse de l'utilisateur
+    const mine = ++sequence;
+    setStatus('Enregistrement…');
+    // Envoi séquentiel : l'ordre des réponses est conservé, seule la dernière réponse met à jour l'affichage.
+    pending = pending.then(async () => {
+      const result = await api('PUT', `/api/v1/diagnostics/${encodeURIComponent(id)}/answers`, { question: input.name, option: input.value });
+      if (!result.ok) {
+        setStatus('Non enregistré');
+        toast(result.error?.message ?? 'La réponse n\'a pas pu être enregistrée.');
+        return;
+      }
+      if (mine === sequence) {
+        applyProgress(result.data.progress);
+        setStatus(`Enregistré à ${time.format(new Date())}`, true);
+      }
+    });
+  });
+
+  diagForm.addEventListener('submit', (event) => event.preventDefault());
+
+  document.querySelector('[data-diagnostic-complete]')?.addEventListener('click', async (event) => {
+    const button = event.currentTarget;
+    button.setAttribute('aria-busy', 'true');
+    await pending;
+    const result = await api('POST', `/api/v1/diagnostics/${encodeURIComponent(id)}/complete`, {});
+    if (result.ok) {
+      window.location.assign(result.data.results_url);
+      return;
+    }
+    button.removeAttribute('aria-busy');
+    const summary = diagForm.querySelector('[data-form-summary]');
+    if (summary) {
+      summary.hidden = false;
+      summary.textContent = result.error?.fields?.answers
+        ? `Impossible de terminer : ${result.error.fields.answers} Revenez sur les étapes non cochées.`
+        : (result.error?.message ?? 'Erreur.');
+    }
+  });
+}
+
+/* ---------- Radar du diagnostic (Chart.js, données fournies par le serveur) ---------- */
+async function initRadar() {
+  const canvas = document.getElementById('chart-radar');
+  const source = document.getElementById('data-radar');
+  if (!canvas || !source || !window.Chart) return;
+  const data = JSON.parse(source.textContent ?? '{}');
+  const css = getComputedStyle(document.documentElement);
+  const token = (name) => css.getPropertyValue(name).trim();
+  await document.fonts.ready;
+  window.Chart.defaults.font.family = 'Poppins';
+  window.Chart.defaults.color = token('--color-text-tertiary');
+  const muted = token('--color-text-tertiary');
+  new window.Chart(canvas, {
+    type: 'radar',
+    data: {
+      labels: data.labels,
+      datasets: [{
+        data: data.values, spanGaps: false, borderColor: token('--color-accent'), backgroundColor: 'rgba(79, 70, 229, 0.12)',
+        borderWidth: 2, pointRadius: 3, pointBackgroundColor: token('--color-accent'),
+      }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx) => (ctx.raw === null ? 'Données insuffisantes' : `${Math.round(ctx.raw)} / 100`) } } },
+      scales: { r: {
+        min: 0, max: 100, ticks: { stepSize: 25, display: false },
+        grid: { color: token('--color-border') }, angleLines: { color: token('--color-border') },
+        pointLabels: { font: { size: 11 }, color: (ctx) => (data.values[ctx.index] === null ? muted : token('--color-text-secondary')) },
+      } },
+    },
+  });
+}
+window.addEventListener('load', initRadar);
 
 /* ---------- Jauges : valeur portée par data-value, appliquée via CSSOM ---------- */
 document.querySelectorAll('[data-value]').forEach((el) => el.style.setProperty('--value', el.dataset.value));

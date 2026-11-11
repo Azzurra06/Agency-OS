@@ -52,8 +52,8 @@
 | Phase 2 | Architecture, formules, sécurité, architecture détaillée | `02` à `05` | ✅ validé (S2 : OpenSSL pour le portfolio) |
 | Phase 3 | UX/UI : design system, composants, écrans, états, bulles d'information | `07-ux-ui.md` et prototype statique (`prototype/`) | ✅ validé |
 | Phase 4, lot 0 | Socle : bootstrap et configuration, profils `portfolio`/`production`, PDO, migrations, `Decimal`, middlewares de sécurité (en-têtes, session, CSRF, authentification, contexte d'organisation, limitation des tentatives), dépôts restreints à l'organisation, `FieldCrypto`, journalisation, `Mailer` en capture, exécuteur cron, CI | code et tests (§5) | ✅ validé |
-| **Phase 4, lot 1** | Démo (création, quotas, expiration, purge), authentification complète (comptes de test), layout, vue d'ensemble, profil et onboarding | code et tests (§6) | ⏳ livré, à valider |
-| Phase 4, lot 2 | Diagnostic (questionnaire v1, scoring, résultats partiels) | — | — |
+| Phase 4, lot 1 | Démo (création, quotas, expiration, purge), authentification complète (comptes de test), layout, vue d'ensemble, profil et onboarding | code et tests (§6) | ✅ validé |
+| **Phase 4, lot 2** | Diagnostic (questionnaire v1, scoring, résultats partiels) | code et tests (§7) | ⏳ livré, à valider |
 | Phase 4, lot 3 | Pricing (simulateur, aperçus, finalisation, versions) | — | — |
 | Phase 4, lot 4 | Revenus récurrents (offres, contrats, scénarios, projections) | — | — |
 | Phase 4, lot 5 | Stratégie (moteur de règles, sources des recommandations, plan d'action) | — | — |
@@ -98,3 +98,20 @@
 | API | `organization`, `financial-profile` (+ `derived`, `changes`), `services` ; décimaux en chaînes, taux en pourcentage, liste blanche | 422 sur nombre JSON ou champ inconnu, 400 sur JSON invalide, 404 et journalisation sur une prestation d'une autre agence |
 
 **Total : 156 tests, 1 495 assertions**, PHPStan niveau max sans erreur, aucun motif interdit.
+
+## 7. Lot 2 : ce qui a été livré (11/11/2026)
+
+| Exigence | Mise en œuvre | Vérification |
+|---|---|---|
+| Questionnaire versionné | `app/Domain/Diagnostic/Questionnaires/v1.php` (30 questions, 6 dimensions, politiques « Je ne sais pas », conditions, préremplissage) ; un diagnostic est toujours relu avec **sa** version | empreinte SHA-256 de la v1 vérifiée par un test : toute modification impose une v2 |
+| Scoring | `DiagnosticScorer` (fonctions pures, BCMath) : score par dimension, seuils de calculabilité (n ≥ 3 et 60 %), score global seulement si les 6 dimensions sont calculables, fiabilité, forces et axes | cas DIAG-1 (58,06 · forces Fidélisation et Organisation · axes Stratégie et Rentabilité), DIAG-2 (diagnostic partiel), conditions, bornes des seuils et des niveaux |
+| Cycle de vie | Migration `0004_diagnostic` : un seul brouillon par agence (colonne générée unique), réponses et scores liés par clés étrangères composites ; clôture transactionnelle qui **fige** les scores (2 décimales) ; « Compléter ces réponses » crée un nouveau brouillon prérempli ; abandon du brouillon possible, jamais d'un diagnostic terminé | 6 tests fonctionnels : reprise du brouillon, réponses refusées après clôture, double clôture refusée, 27 questions pour une agence solo sans maintenance |
+| Préremplissage | `fin.hourly_cost` suggéré depuis le profil (coût calculé → niveau 2, saisi → niveau 1), signalé « Issu de votre profil, modifiable » | test dédié |
+| Isolation | Toutes les requêtes passent par `OrgScopedRepository` ; un identifiant d'une autre agence renvoie 404 et est journalisé ; impossible de recopier le diagnostic d'une autre agence | test d'isolation (lecture, écriture, clôture, copie, page HTML) |
+| Interface | Accueil (Commencer / Reprendre x/6, dernier résultat, historique) ; questionnaire par dimension avec sauvegarde automatique séquentielle, questions conditionnelles affichées ou masquées selon les règles du serveur, explication de la politique « Je ne sais pas » sous chaque question ; résultats figés (anneau de score ou « Diagnostic partiel », radar Chart.js local avec axes non calculables grisés et jamais placés à 0, forces et axes, détail par dimension, comparaison avec le diagnostic précédent si même version) ; carte « Maturité business » sur la vue d'ensemble | parcours navigateur desktop et mobile : aucun défilement horizontal, aucune violation CSP ni Trusted Types |
+| Démo | Lumen dispose d'un diagnostic terminé cohérent avec DIAG-1 (score 58 affiché dès l'arrivée) ; la réinitialisation le recrée | test dédié |
+
+**Constat à signaler.** Avec le questionnaire v1 tel que validé, une seule question par dimension au plus a la politique « inconnue » : une clôture (qui exige une réponse à chaque question applicable) ne peut donc **jamais** produire de dimension non calculable. Le statut « Diagnostic partiel » est entièrement implémenté et testé (écrit directement en base dans le test), mais il ne pourra apparaître qu'avec une future version du questionnaire comportant davantage de questions « inconnues ».
+
+**Total : 168 tests, 1 748 assertions**, PHPStan niveau max sans erreur, aucun motif interdit.
+

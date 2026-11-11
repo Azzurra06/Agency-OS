@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace App\Http;
 
 use App\App;
+use App\Http\Controllers\Api\DiagnosticApiController;
 use App\Http\Controllers\Api\FinancialProfileApiController;
 use App\Http\Controllers\Api\HealthController;
 use App\Http\Controllers\Api\OrganizationApiController;
 use App\Http\Controllers\Api\ServicesApiController;
 use App\Http\Controllers\Pages\AppPagesController;
 use App\Http\Controllers\Pages\AuthPagesController;
+use App\Http\Controllers\Pages\DiagnosticPagesController;
 use App\Http\Controllers\Pages\DemoPagesController;
 use App\Http\Controllers\Pages\PublicPagesController;
 
@@ -30,6 +32,8 @@ final class Routes
         $organization = new OrganizationApiController($app);
         $finance = new FinancialProfileApiController($app);
         $services = new ServicesApiController($app);
+        $diagnostic = new DiagnosticApiController($app);
+        $diagnosticPages = new DiagnosticPagesController($app);
         $p = Route::ACCESS_PUBLIC;
 
         // Public
@@ -58,7 +62,10 @@ final class Routes
         $r->add('GET', '/app/parametres/agence', $pages->settingsAgency(...), 'app.read');
         $r->add('GET', '/app/parametres/finances', $pages->settingsFinance(...), 'finance.read');
         $r->add('GET', '/app/parametres/prestations', $pages->settingsServices(...), 'app.read');
-        foreach (['diagnostic', 'pricing', 'recurrent', 'strategie'] as $module) {
+        $r->add('GET', '/app/diagnostic', $diagnosticPages->home(...), 'app.read');
+        $r->add('GET', '/app/diagnostic/questionnaire', $diagnosticPages->questionnaire(...), 'app.read');
+        $r->add('GET', '/app/diagnostic/resultats/{id}', $diagnosticPages->results(...), 'app.read');
+        foreach (['pricing', 'recurrent', 'strategie'] as $module) {
             $r->add('GET', '/app/' . $module, $pages->module(...), 'app.read');
         }
 
@@ -74,6 +81,13 @@ final class Routes
         $r->add('POST', '/api/v1/services', $services->store(...), 'organization.write');
         $r->add('PATCH', '/api/v1/services/{id}', $services->update(...), 'organization.write');
         $r->add('DELETE', '/api/v1/services/{id}', $services->destroy(...), 'organization.write');
+        $r->add('GET', '/api/v1/diagnostic/questionnaire', $diagnostic->questionnaire(...), 'app.read');
+        $r->add('GET', '/api/v1/diagnostics', $diagnostic->index(...), 'app.read');
+        $r->add('POST', '/api/v1/diagnostics', $diagnostic->store(...), 'diagnostic.write');
+        $r->add('PUT', '/api/v1/diagnostics/{id}/answers', $diagnostic->answer(...), 'diagnostic.write');
+        $r->add('POST', '/api/v1/diagnostics/{id}/complete', $diagnostic->complete(...), 'diagnostic.write');
+        $r->add('GET', '/api/v1/diagnostics/{id}/results', $diagnostic->results(...), 'app.read');
+        $r->add('DELETE', '/api/v1/diagnostics/{id}', $diagnostic->destroy(...), 'diagnostic.write');
 
         return $r;
     }

@@ -9,13 +9,12 @@ use App\Http\Request;
 use App\Http\Response;
 
 /**
- * Écrans de l'application (lot 1) : vue d'ensemble, onboarding, paramètres. Les modules métier
- * (diagnostic, pricing, récurrent, stratégie) arrivent aux lots suivants.
+ * Écrans de l'application : vue d'ensemble, onboarding, paramètres. Les modules pricing, récurrent
+ * et stratégie arrivent aux lots suivants (page d'attente).
  */
 final class AppPagesController extends Controller
 {
     private const MODULES = [
-        'diagnostic' => ['Diagnostic', 'clipboard-check', 2, 'Évaluez la maturité de votre agence sur six dimensions.'],
         'pricing' => ['Pricing', 'tag', 3, 'Vérifiez que vos prix couvrent vos coûts et votre marge cible.'],
         'recurrent' => ['Revenus récurrents', 'repeat', 4, 'Concevez vos offres de maintenance et simulez votre MRR.'],
         'strategie' => ['Stratégie', 'target', 5, 'Recevez des recommandations priorisées et suivez votre plan d\'action.'],
@@ -32,6 +31,7 @@ final class AppPagesController extends Controller
         return $this->screen($request, 'app/dashboard', 'vue', 'Vue d\'ensemble', [
             'derived' => $this->app->financialProfiles()->derived($org),
             'services' => $this->app->serviceRepository()->all($org, true),
+            'diagnostic' => $this->app->diagnostics()->overview($org),
         ]);
     }
 
@@ -75,26 +75,8 @@ final class AppPagesController extends Controller
     public function module(Request $request): Response
     {
         $key = trim(substr($request->path, strlen('/app/')), '/');
-        [$label, $icon, $lot, $promise] = self::MODULES[$key] ?? self::MODULES['diagnostic'];
+        [$label, $icon, $lot, $promise] = self::MODULES[$key] ?? self::MODULES['pricing'];
 
         return $this->screen($request, 'app/module-soon', $key, $label, ['moduleLabel' => $label, 'moduleIcon' => $icon, 'lot' => $lot, 'promise' => $promise]);
-    }
-
-    /**
-     * @param array<string, mixed> $data
-     */
-    private function screen(Request $request, string $template, string $nav, string $title, array $data): Response
-    {
-        $org = $this->org($request);
-        $auth = $this->auth($request);
-
-        return $this->page($template, $data + [
-            'title' => $title,
-            'nav' => $nav,
-            'org' => $this->app->organizations()->get($org),
-            'isDemo' => $auth->isDemo,
-            'demoExpiresAt' => $auth->demoExpiresAt?->format('Y-m-d\TH:i:s\Z'),
-            'demoRemaining' => $auth->demoExpiresAt === null ? null : max(0, $auth->demoExpiresAt->getTimestamp() - $this->app->clock()->nowUtc()->getTimestamp()),
-        ]);
     }
 }
