@@ -189,6 +189,15 @@ dialog.dialog::backdrop { background: rgba(23, 23, 28, 0.35); }
 .dash-reco { display: flex; justify-content: space-between; gap: var(--space-3); align-items: center; padding: var(--space-2) 0; border-bottom: 1px solid var(--color-border); }
 .dash-reco:last-child { border-bottom: 0; }
 
+/* ---------- Lot 6 : pages publiques, compte, historique ---------- */
+.public-page--wide { max-width: 960px; }
+.public-footer { text-align: center; padding-top: var(--space-4); }
+.formula { margin: 0; padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); background: var(--color-surface-sunken); font-size: var(--text-small); line-height: 1.6; white-space: pre-wrap; overflow-x: auto; }
+.nature-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); font-size: var(--text-small); }
+.narrow-form { max-width: 420px; }
+.danger-zone { border-color: var(--color-danger); }
+.steps-text { margin: 0; padding-left: var(--space-5); display: flex; flex-direction: column; gap: var(--space-1); }
+
 @media (max-width: 1023px) {
   .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .kpi-grid > :last-child { grid-column: 1 / -1; }

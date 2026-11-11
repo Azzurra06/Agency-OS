@@ -1,6 +1,6 @@
 <?php
 /** @var string $tab */
-$tabs = ['agence' => 'Agence', 'finances' => 'Finances', 'prestations' => 'Prestations'];
+$tabs = ['agence' => 'Agence', 'finances' => 'Finances', 'prestations' => 'Prestations', 'compte' => 'Compte', 'securite' => 'Sécurité', 'donnees' => 'Données'];
 ?>
 <header class="page-header">
   <div class="page-header__titles"><h1>Paramètres</h1><p class="page-header__sub">Les données qui alimentent tous les calculs.</p></div>

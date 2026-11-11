@@ -50,6 +50,7 @@ final class DemoService
         private readonly PricingService $pricing,
         private readonly RecurringService $recurring,
         private readonly StrategyService $strategy,
+        private readonly HistoryService $history,
         private readonly RateLimiter $limiter,
         private readonly SecurityEventLogger $events,
         private readonly SessionManager $sessions,
@@ -115,7 +116,7 @@ final class DemoService
     public function reset(OrgId $org, int $userId): void
     {
         $this->db->transaction(function () use ($org): void {
-            foreach (['action_plans', 'recommendations', 'recurring_scenarios', 'recurring_offers', 'pricing_simulations', 'diagnostics', 'financial_profile_changes', 'financial_profiles', 'services'] as $table) {
+            foreach (['kpi_snapshots', 'action_plans', 'recommendations', 'recurring_scenarios', 'recurring_offers', 'pricing_simulations', 'diagnostics', 'financial_profile_changes', 'financial_profiles', 'services'] as $table) {
                 $this->db->run("DELETE FROM {$table} WHERE organization_id = :org", ['org' => $org->value]);
             }
             $this->db->run(
@@ -212,6 +213,10 @@ final class DemoService
             }
         }
         $this->strategy->createAction($org, ['title' => 'Présenter la nouvelle grille tarifaire à l\'équipe', 'due_date' => $this->clock->nowUtc()->modify('+14 days')->format('Y-m-d')]);
+
+        // Historique fictif de 30 jours (marqué « Démo » à l'affichage), avec deux jours manquants.
+        $publicId = TypedArray::string($this->db->fetchOne('SELECT public_id FROM organizations WHERE id = :id', ['id' => $org->value]) ?? [], 'public_id');
+        $this->history->seedDemo($org, $publicId);
     }
 
     /**

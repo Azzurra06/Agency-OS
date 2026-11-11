@@ -32,6 +32,13 @@ final class AuthPagesController extends Controller
         if ($result === 'ok') {
             return Response::redirect('/app');
         }
+        if ($result === 'deletion_scheduled') {
+            // Compte en cours de suppression (D8) : l'annulation exige le mot de passe ET un lien envoyé par email.
+            $this->app->account()->sendCancellationLink($email);
+            $this->flash('info', 'Ce compte est en cours de suppression et désactivé. Un lien pour annuler la suppression vient d\'être envoyé à son adresse email.');
+
+            return Response::redirect('/connexion');
+        }
         $this->flash('error', $result === 'locked'
             ? 'Trop de tentatives. Réessayez dans quelques minutes.'
             : 'Identifiants invalides.');
@@ -135,22 +142,5 @@ final class AuthPagesController extends Controller
             : 'Ce lien de vérification est invalide ou a expiré.');
 
         return Response::redirect('/connexion')->withHeader('Referrer-Policy', 'no-referrer');
-    }
-
-    private function flash(string $type, string $message): void
-    {
-        $_SESSION['_flash'] = ['type' => $type, 'message' => $message];
-    }
-
-    /** @return array{type: string, message: string}|null */
-    private function pullFlash(): ?array
-    {
-        $flash = $_SESSION['_flash'] ?? null;
-        unset($_SESSION['_flash']);
-        if (!is_array($flash) || !is_string($flash['type'] ?? null) || !is_string($flash['message'] ?? null)) {
-            return null;
-        }
-
-        return ['type' => $flash['type'], 'message' => $flash['message']];
     }
 }

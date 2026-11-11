@@ -1,6 +1,8 @@
 <?php
 /** @var string $title */
 /** @var string $content */
+/** @var bool $wide */
+$wide ??= false;
 ?><!doctype html>
 <html lang="fr">
 <head>
@@ -16,9 +18,10 @@
 </head>
 <body>
   <a class="skip-link" href="#contenu">Aller au contenu</a>
-  <main id="contenu" class="public-page">
+  <main id="contenu" class="<?= attr($wide ? 'public-page public-page--wide' : 'public-page') ?>">
     <a class="public-brand" href="/"><span class="brand__mark" aria-hidden="true">AO</span><span class="brand__name">Agency OS</span></a>
     <?= $content /* contenu déjà rendu et échappé par la vue */ ?>
+    <?php include __DIR__ . '/../partials/public-footer.php'; ?>
   </main>
 </body>
 </html>

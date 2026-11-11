@@ -1,5 +1,5 @@
 /*
- * Agency OS — scripts de l'application (lots 1 à 5).
+ * Agency OS — scripts de l'application (lots 1 à 6).
  * Règles (docs/04-securite.md §5) : aucun innerHTML ni eval, aucune formule métier (le serveur calcule),
  * aucune donnée financière dans le stockage du navigateur. Compatible CSP stricte et Trusted Types.
  */
@@ -865,6 +865,39 @@ document.querySelectorAll('[data-action]').forEach((item) => {
     });
   });
 });
+
+/* ---------- Vue d'ensemble : historique (jours manquants = trous, jamais d'interpolation) ---------- */
+async function initHistory() {
+  const canvas = document.getElementById('chart-history');
+  const source = document.getElementById('data-history');
+  if (!canvas || !source || !window.Chart) return;
+  const data = JSON.parse(source.textContent ?? '{}');
+  const css = getComputedStyle(document.documentElement);
+  const token = (name) => css.getPropertyValue(name).trim();
+  await document.fonts.ready;
+  window.Chart.defaults.font.family = 'Poppins';
+  window.Chart.defaults.color = token('--color-text-tertiary');
+  const format = (v) => (data.unit === 'score' ? `${Math.round(v)} / 100` : fmtEuro0.format(v));
+  new window.Chart(canvas, {
+    type: 'line',
+    data: { labels: data.labels, datasets: [{ data: data.values, spanGaps: false, borderColor: token('--color-accent'), borderWidth: 2, pointRadius: 2, pointHoverRadius: 4, fill: false }] },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: {
+        label: (ctx) => (ctx.raw === null ? 'Aucune donnée enregistrée ce jour' : format(ctx.raw)),
+        footer: (items) => {
+          const at = data.captured[items[0]?.dataIndex];
+          return at ? `État au ${at.slice(8, 10)}/${at.slice(5, 7)} à ${at.slice(11, 16)} (UTC)` : '';
+        },
+      } } },
+      scales: {
+        x: { grid: { display: false }, ticks: { maxTicksLimit: 8 } },
+        y: { grid: { color: token('--color-border') }, border: { display: false }, ticks: { callback: (v) => format(v), maxTicksLimit: 4 } },
+      },
+    },
+  });
+}
+window.addEventListener('load', initHistory);
 
 /* ---------- Largeurs proportionnelles (barres empilées) via CSSOM ---------- */
 document.querySelectorAll('[data-width]').forEach((el) => el.style.setProperty('width', `${Number(el.dataset.width)}%`));

@@ -21,8 +21,8 @@ SaaS de pilotage stratégique et financier pour petites agences web et digitales
 | 4 — Lot 2 : diagnostic | code `app/`, `tests/` · [docs/08-questionnaire-v1.md](docs/08-questionnaire-v1.md) | Validé |
 | 4 — Lot 3 : pricing | code `app/`, `tests/` | Validé |
 | 4 — Lot 4 : revenus récurrents | code `app/`, `tests/` | Validé |
-| **4 — Lot 5 : stratégie** | code `app/`, `tests/` | Livré |
-| 4 — Lot 6 | — | À venir |
+| 4 — Lot 5 : stratégie | code `app/`, `tests/` | Validé |
+| **4 — Lot 6 : historique, méthodologie, RGPD, pages légales** | code `app/`, `tests/` | Livré |
 | 5 — Tests et déploiement | — | À venir |
 
 ## Stack

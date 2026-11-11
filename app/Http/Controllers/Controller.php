@@ -100,4 +100,21 @@ abstract class Controller
             'demoRemaining' => $auth->demoExpiresAt === null ? null : max(0, $auth->demoExpiresAt->getTimestamp() - $this->app->clock()->nowUtc()->getTimestamp()),
         ]);
     }
+
+    protected function flash(string $type, string $message): void
+    {
+        $_SESSION['_flash'] = ['type' => $type, 'message' => $message];
+    }
+
+    /** @return array{type: string, message: string}|null */
+    protected function pullFlash(): ?array
+    {
+        $flash = $_SESSION['_flash'] ?? null;
+        unset($_SESSION['_flash']);
+        if (!is_array($flash) || !is_string($flash['type'] ?? null) || !is_string($flash['message'] ?? null)) {
+            return null;
+        }
+
+        return ['type' => $flash['type'], 'message' => $flash['message']];
+    }
 }

@@ -43,7 +43,18 @@ final class Config
         public readonly string $smtpUser,
         public readonly string $smtpPassword,
         public readonly string $timezone,
+        /** Mentions légales (facultatives en développement ; affichées « à compléter » si absentes). */
+        public readonly string $legalPublisher = '',
+        public readonly string $legalContactEmail = '',
+        public readonly string $legalAddress = '',
+        public readonly string $legalRegistration = '',
     ) {
+    }
+
+    /** Vrai si les mentions légales obligatoires sont renseignées (éditeur et contact). */
+    public function legalComplete(): bool
+    {
+        return $this->legalPublisher !== '' && $this->legalContactEmail !== '';
     }
 
     public static function fromEnv(Env $env, string $basePath): self
@@ -73,6 +84,10 @@ final class Config
             smtpUser: $env->get('SMTP_USER', '') ?? '',
             smtpPassword: $env->get('SMTP_PASSWORD', '') ?? '',
             timezone: $env->get('APP_TIMEZONE', 'Europe/Paris') ?? 'Europe/Paris',
+            legalPublisher: $env->get('LEGAL_PUBLISHER', '') ?? '',
+            legalContactEmail: $env->get('LEGAL_CONTACT_EMAIL', '') ?? '',
+            legalAddress: $env->get('LEGAL_ADDRESS', '') ?? '',
+            legalRegistration: $env->get('LEGAL_REGISTRATION', '') ?? '',
         );
         $config->assertCoherent();
 

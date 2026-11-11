@@ -28,6 +28,9 @@ final class AppPagesController extends Controller
             'recurring' => $this->app->recurring()->summary($org),
             'hasOffers' => $this->app->recurringRepository()->offers($org) !== [],
             'strategy' => $this->app->strategy()->overview($org),
+            'history' => $this->app->history()->series($org, $identity['public_id'], ($request->query['jours'] ?? '30') === '7' ? 7 : 30),
+            'historyMetric' => in_array($request->query['courbe'] ?? '', ['mrr_contracted', 'maturity_score', 'hourly_cost'], true) ? $request->query['courbe'] : 'estimated_result',
+            'charts' => true,
         ]);
     }
 

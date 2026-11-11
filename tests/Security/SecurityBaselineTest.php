@@ -51,7 +51,11 @@ final class SecurityBaselineTest extends TestCase
         }
         // Toute nouvelle route publique doit être ajoutée ici consciemment (revue de sécurité).
         self::assertSame([
-            'GET /', 'GET /api/v1/health', 'GET /demo', 'POST /demo', 'GET /demo/expiree', 'GET /connexion', 'POST /connexion',
+            'GET /', 'GET /api/v1/health', 'GET /demo', 'POST /demo', 'GET /demo/expiree',
+            // Lot 6 : pages d'information publiques et liens reçus par email (jeton à usage unique, action en POST avec CSRF).
+            'GET /methodologie', 'GET /mentions-legales', 'GET /confidentialite',
+            'GET /compte/suppression/{token}', 'POST /compte/suppression', 'GET /compte/annulation/{token}', 'POST /compte/annulation',
+            'GET /connexion', 'POST /connexion',
             'GET /inscription', 'GET /mot-de-passe-oublie', 'POST /mot-de-passe-oublie', 'GET /reinitialisation/{token}',
             'GET /reinitialisation', 'POST /reinitialisation', 'GET /verification/{token}',
         ], $public);

@@ -5,12 +5,13 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Pages;
 
 use App\App;
+use App\Domain\Diagnostic\QuestionnaireRegistry;
 use App\Http\Request;
 use App\Http\Response;
 use App\Support\View;
 
 /**
- * Pages publiques du socle (lot 0). Les écrans définitifs arrivent au lot 1.
+ * Pages publiques : accueil, démonstration expirée, méthodologie, mentions légales, confidentialité.
  */
 final class PublicPagesController
 {
@@ -29,5 +30,20 @@ final class PublicPagesController
     public function demoExpired(Request $request): Response
     {
         return Response::html(View::render('pages/demo-expired', ['title' => 'Démonstration expirée'], 'layouts/minimal'));
+    }
+
+    public function methodology(Request $request): Response
+    {
+        return Response::html(View::render('pages/methodology', ['title' => 'Méthodologie', 'wide' => true, 'questionnaire' => QuestionnaireRegistry::current()], 'layouts/minimal'));
+    }
+
+    public function legal(Request $request): Response
+    {
+        return Response::html(View::render('pages/legal', ['title' => 'Mentions légales', 'config' => $this->app->config], 'layouts/minimal'));
+    }
+
+    public function privacy(Request $request): Response
+    {
+        return Response::html(View::render('pages/privacy', ['title' => 'Confidentialité', 'config' => $this->app->config], 'layouts/minimal'));
     }
 }

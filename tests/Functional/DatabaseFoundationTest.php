@@ -18,7 +18,7 @@ final class DatabaseFoundationTest extends DatabaseTestCase
     {
         $migrator = new Migrator($this->app->db(), dirname(__DIR__, 2) . '/database/migrations');
         self::assertSame([], $migrator->migrate(), 'Aucune migration ne doit être rejouée.');
-        self::assertSame(7, $this->countRows('schema_migrations'));
+        self::assertSame(8, $this->countRows('schema_migrations'));
         foreach ($this->app->db()->fetchAll('SELECT checksum FROM schema_migrations') as $row) {
             self::assertMatchesRegularExpression('/^[0-9a-f]{64}$/', (string) $row['checksum']);
         }

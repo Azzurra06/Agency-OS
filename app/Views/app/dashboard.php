@@ -4,6 +4,8 @@
 /** @var bool $isDemo */
 /** @var array{mrr: string, arr: string, coverage_pct: string|null} $recurring */
 /** @var bool $hasOffers */
+/** @var array{days: list<array<string, mixed>>, missing: list<string>, count: int} $history */
+/** @var string $historyMetric */
 /** @var array{top: list<array{title: string, rule_code: string, priority_label: string, impact_kind: string, impact_amount: string|null}>, progress: array{done: int, total: int, pct: int}} $strategy */
 /** @var array{draft: array{dimensions_done: int, dimensions: int}|null, latest: array{public_id: string, completed_at: string, global_display: string|null, level: string|null, reliability_label: string|null}|null} $diagnostic */
 use App\Support\FinanceFields;
@@ -175,6 +177,33 @@ $hourlyLabel = $hourly['assumptions'] === [] ? 'Calculé' : sprintf('Calculé, %
     </div>
   </section>
 </div>
+
+<?php
+$metricLabels = ['estimated_result' => 'Résultat estimé', 'mrr_contracted' => 'MRR contractualisé', 'maturity_score' => 'Maturité', 'hourly_cost' => 'Coût horaire'];
+$historyDays = count($history['days']);
+$chartData = [
+    'labels' => array_map(static fn (array $d): string => substr((string) $d['date'], 8, 2) . '/' . substr((string) $d['date'], 5, 2), $history['days']),
+    'values' => array_map(static fn (array $d): ?float => ($d['missing'] ?? false) || !isset($d[$historyMetric]) ? null : (float) $d[$historyMetric], $history['days']),
+    'captured' => array_map(static fn (array $d): ?string => ($d['missing'] ?? false) ? null : (string) $d['captured_at'], $history['days']),
+    'unit' => $historyMetric === 'maturity_score' ? 'score' : 'euro',
+];
+?>
+<section class="card" aria-labelledby="t-history">
+  <div class="card__header">
+    <div class="card__title"><h2 id="t-history">Évolution</h2><?= ui_tip('tip-history', 'Évolution', 'Historique des indicateurs', 'Un instantané est enregistré chaque nuit (vers 02:15, heure de Paris). Un jour sans instantané reste vide dans la courbe : aucune valeur n\'est inventée entre deux points.') ?><?php if ($isDemo): ?><?= ui_nature('demo', 'Historique fictif') ?><?php endif; ?></div>
+    <nav class="chips" aria-label="Période"><?php foreach ([7, 30] as $d): ?><a class="chip" href="/app?jours=<?= attr($d) ?>&amp;courbe=<?= attr($historyMetric) ?>"<?php if ($historyDays === $d): ?> aria-current="true"<?php endif; ?>><?= e($d . ' jours') ?></a><?php endforeach; ?></nav>
+  </div>
+  <?php if ($history['count'] === 0): ?>
+    <div class="empty"><span class="empty__icon"><?= ui_icon('chart-spline') ?></span><h3>L'historique commence demain matin</h3><p class="empty__text text-small">Un instantané de vos indicateurs est enregistré chaque nuit. La courbe apparaîtra dès le premier.</p></div>
+  <?php else: ?>
+    <nav class="chips" aria-label="Indicateur"><?php foreach ($metricLabels as $key => $label): ?><a class="chip" href="/app?jours=<?= attr($historyDays) ?>&amp;courbe=<?= attr($key) ?>"<?php if ($historyMetric === $key): ?> aria-current="true"<?php endif; ?>><?= e($label) ?></a><?php endforeach; ?></nav>
+    <div class="chart-box"><canvas id="chart-history" role="img" aria-label="<?= attr($metricLabels[$historyMetric] . ' sur ' . $historyDays . ' jours, ' . count($history['missing']) . ' jour(s) sans donnée.') ?>"></canvas></div>
+    <script type="application/json" id="data-history"><?= json_script($chartData) ?></script>
+    <?php if ($history['missing'] !== []): ?>
+      <details class="text-small"><summary><?= e(count($history['missing']) . ' jour(s) sans donnée enregistrée') ?></summary><p class="text-secondary"><?= e(implode(', ', array_map(static fn (string $d): string => Format::date($d), $history['missing']))) ?></p></details>
+    <?php endif; ?>
+  <?php endif; ?>
+</section>
 
 <section class="card card--sunken" aria-labelledby="t-start">
   <div class="cluster cluster--between">

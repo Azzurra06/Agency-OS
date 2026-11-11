@@ -4,18 +4,23 @@ declare(strict_types=1);
 
 namespace App;
 
+use App\Application\AccountService;
 use App\Application\AuthService;
 use App\Application\CatalogService;
 use App\Application\DemoService;
 use App\Application\DiagnosticService;
+use App\Application\ExportService;
 use App\Application\FinancialProfileService;
+use App\Application\HistoryService;
 use App\Application\PricingService;
 use App\Application\RecurringService;
 use App\Application\StrategyService;
 use App\Cron\CronRunner;
+use App\Cron\Jobs\DailyMaintenanceJob;
 use App\Cron\Jobs\PurgeDemoJob;
 use App\Cron\Jobs\PurgeRateLimitsJob;
 use App\Cron\Jobs\PurgeSecurityEventsJob;
+use App\Cron\Jobs\SnapshotDailyJob;
 use App\Http\Kernel;
 use App\Http\Routes;
 use App\Infrastructure\Database\Connection;
@@ -25,6 +30,7 @@ use App\Infrastructure\Repositories\OrganizationRepository;
 use App\Infrastructure\Repositories\PricingRepository;
 use App\Infrastructure\Repositories\RecurringRepository;
 use App\Infrastructure\Repositories\ServiceRepository;
+use App\Infrastructure\Repositories\SnapshotRepository;
 use App\Infrastructure\Repositories\StrategyRepository;
 use App\Mail\CaptureTransport;
 use App\Mail\Mailer;
@@ -213,10 +219,38 @@ class App
         ));
     }
 
+    public function snapshotRepository(): SnapshotRepository
+    {
+        return $this->resolve('snapshot_repository', fn () => new SnapshotRepository($this->db(), $this->fieldCrypto()));
+    }
+
+    public function history(): HistoryService
+    {
+        return $this->resolve('history', fn () => new HistoryService(
+            $this->snapshotRepository(), $this->financialProfiles(), $this->recurring(), $this->recurringRepository(), $this->diagnosticRepository(), $this->strategy(), $this->clock(),
+        ));
+    }
+
+    public function exporter(): ExportService
+    {
+        return $this->resolve('exporter', fn () => new ExportService(
+            $this->db(), $this->organizations(), $this->financialProfiles(), new FinancialProfileRepository($this->db(), $this->fieldCrypto(), $this->clock()),
+            $this->serviceRepository(), $this->diagnosticRepository(), $this->diagnostics(), $this->pricingRepository(), $this->pricing(), $this->recurring(),
+            $this->strategy(), $this->snapshotRepository(), $this->clock(),
+        ));
+    }
+
+    public function account(): AccountService
+    {
+        return $this->resolve('account', fn () => new AccountService(
+            $this->db(), $this->passwords(), $this->rateLimiter(), $this->securityEvents(), $this->mailer(), $this->config, $this->clock(), $this->exporter(),
+        ));
+    }
+
     public function demos(): DemoService
     {
         return $this->resolve('demos', fn () => new DemoService(
-            $this->db(), $this->financialProfiles(), $this->serviceRepository(), $this->diagnostics(), $this->pricing(), $this->recurring(), $this->strategy(),
+            $this->db(), $this->financialProfiles(), $this->serviceRepository(), $this->diagnostics(), $this->pricing(), $this->recurring(), $this->strategy(), $this->history(),
             $this->rateLimiter(), $this->securityEvents(), $this->sessions(), $this->clock(),
         ));
     }
@@ -232,6 +266,8 @@ class App
             new PurgeDemoJob($this->demos()),
             new PurgeRateLimitsJob($this->rateLimiter()),
             new PurgeSecurityEventsJob($this->securityEvents()),
+            new SnapshotDailyJob($this->snapshotRepository(), $this->history(), $this->clock()),
+            new DailyMaintenanceJob($this->account(), $this->strategy(), $this->db()),
         ]));
     }
 

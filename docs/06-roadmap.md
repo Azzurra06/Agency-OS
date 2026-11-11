@@ -56,8 +56,8 @@
 | Phase 4, lot 2 | Diagnostic (questionnaire v1, scoring, résultats partiels) | code et tests (§7) | ✅ validé |
 | Phase 4, lot 3 | Pricing (simulateur, aperçus, finalisation, versions) | code et tests (§8) | ✅ validé |
 | Phase 4, lot 4 | Revenus récurrents (offres, contrats, scénarios, projections) | code et tests (§9) | ✅ validé |
-| **Phase 4, lot 5** | Stratégie (moteur de règles, sources des recommandations, plan d'action) | code et tests (§10) | ⏳ livré, à valider |
-| Phase 4, lot 6 | Dashboard complet, historique, méthodologie, RGPD (export et suppression, utiles aux comptes de test), pages légales du portfolio | — | — |
+| Phase 4, lot 5 | Stratégie (moteur de règles, sources des recommandations, plan d'action) | code et tests (§10) | ✅ validé |
+| **Phase 4, lot 6** | Dashboard complet, historique, méthodologie, RGPD (export et suppression, utiles aux comptes de test), pages légales du portfolio | code et tests (§11) | ⏳ livré, à valider |
 | Phase 5 | Tests de sécurité (locaux) ; déploiement **portfolio** sur Hostinger, avec ton accord pour chaque action ; checklist de mise en ligne du portfolio | runbooks et checklist | — |
 | **Plus tard** | **SaaS commercial** : choix de l'infrastructure isolée, A3, A5, A6, A7, A8 et A9, revue de sécurité complète, checklist « données réelles », documents RGPD définitifs, éventuellement facturation | — | ⏸ |
 
@@ -169,4 +169,21 @@ Une prestation supprimée laisse ses simulations figées lisibles (le contexte f
 **Écart assumé avec 02 §5.6.** Les colonnes `title`, `explanation` et `impact_text` ne sont pas stockées : ces textes contiennent des montants. Ils sont produits à l'affichage par `RuleCatalog` à partir des preuves chiffrées, ce qui respecte D4 sans perdre d'information.
 
 **Total : 205 tests, 2 421 assertions**, PHPStan niveau max sans erreur, aucun motif interdit.
+
+## 11. Lot 6 : ce qui a été livré (11/11/2026)
+
+| Exigence | Mise en œuvre | Vérification |
+|---|---|---|
+| Historique | Migration `0008_history` ; tâche `snapshot-daily` « dès 02:15 » (heure de Paris), organisations réelles seulement, par lots, reprise en cas d'échec partiel, **jamais d'écrasement** (contrainte unique) ; valeurs financières et contexte **chiffrés (D4)** ; KPI non calculable = NULL, jamais 0 | test : un instantané, aucun doublon, aucune valeur en clair, date de Paris |
+| Vue d'ensemble | Carte « Évolution » (7 ou 30 jours ; résultat estimé, MRR, maturité, coût horaire) : un jour manquant est un **trou** dans la courbe, infobulle « Aucune donnée enregistrée ce jour », liste des jours manquants, « État au … » ; état vide « L'historique commence demain matin » ; démo : 30 jours **fictifs** marqués « Historique fictif », avec deux jours manquants ; API `GET /api/v1/dashboard/history` | tests ; navigateur |
+| Maintenance quotidienne | Tâche `daily-maintenance` « dès 02:30 » : purge des comptes à J+7 (D8) et réévaluation quotidienne des recommandations (reports échus, données devenues anciennes) | tests |
+| Méthodologie | Page publique `/methodologie` : formules (profil, coût horaire, pricing, récurrent), scoring du diagnostic avec la politique « Je ne sais pas » de **chaque** question (générée depuis le questionnaire v1), moteur de règles et priorité, natures des données, exemples chiffrés | test ; navigateur desktop et mobile |
+| Compte et sécurité | Paramètres › Compte (changement de mot de passe : mot de passe actuel exigé, autres sessions fermées, email de notification) ; Sécurité (10 dernières connexions avec IP tronquée, « Déconnecter tous les appareils ») ; en démo : « Non disponible en démonstration » | tests |
+| Export RGPD | Paramètres › Données : mot de passe redemandé, fichier JSON complet (profil déchiffré et journal, prestations, diagnostics, simulations, formules et scénarios, recommandations, plan, historique) généré **en mémoire, jamais écrit sur le disque**, en pièce jointe `no-store`, 5 par heure, journalisé (`account.export`, sans contenu) et notifié par email ; aucune empreinte de mot de passe | tests |
+| Suppression (D8) | 1. mot de passe + saisie « SUPPRIMER » → lien email (1 h, usage unique) ; 2. le lien affiche une confirmation (GET sans effet), le POST **désactive immédiatement** (sessions fermées) ; 3. pendant 7 jours, la connexion avec le bon mot de passe envoie un lien d'annulation ; 4. à J+7, purge (cascade), **vérification par comptage**, registre minimal `deletion_registry`, événement `account.purged` **anonymisé** | test complet (annulation puis purge à J+8) |
+| Pages légales | `/mentions-legales` et `/confidentialite` (responsable, données, cookie de session seul, chiffrement, durées, destinataires, droits) ; identité de l'éditeur et contact lus dans la configuration du serveur (`LEGAL_*`), **jamais dans le dépôt** ; affichés « à compléter » tant qu'ils manquent ; pied de page sur les pages publiques | test (sans et avec configuration) |
+
+**À compléter avant la mise en ligne** : `LEGAL_PUBLISHER` et `LEGAL_CONTACT_EMAIL` (et, selon le statut, `LEGAL_ADDRESS`, `LEGAL_REGISTRATION`) dans `config/.env` sur le serveur ; la durée de conservation des sauvegardes Hostinger, citée dans la politique de confidentialité.
+
+**Total : 210 tests, 2 592 assertions**, PHPStan niveau max sans erreur, aucun motif interdit.
 

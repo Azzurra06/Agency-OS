@@ -53,7 +53,7 @@ final class AuthService
     }
 
     /**
-     * @return 'ok'|'invalid'|'locked'
+     * @return 'ok'|'invalid'|'locked'|'deletion_scheduled'
      */
     public function attempt(string $email, string $password, string $ip, ?string $userAgent): string
     {
@@ -83,6 +83,12 @@ final class AuthService
             && TypedArray::nullableString($user, 'email_verified_at') !== null
             && TypedArray::int($user, 'is_demo') === 0;
 
+        if ($user !== null && $hash !== null && $valid && TypedArray::string($user, 'status') === 'deletion_scheduled') {
+            // Compte en cours de suppression (D8) : pas de session ; l'appelant envoie un lien d'annulation par email.
+            $this->events->record('auth.login_failed', TypedArray::int($user, 'id'), ip: $ip, userAgent: $userAgent, context: ['reason' => 'deletion_scheduled']);
+
+            return 'deletion_scheduled';
+        }
         if (!$usable || $user === null || $hash === null) {
             foreach ($keys as $bucket => $key) {
                 $this->limiter->hit($bucket, $key);

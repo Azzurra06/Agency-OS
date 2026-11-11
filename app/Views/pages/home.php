@@ -9,6 +9,7 @@
     <a class="btn btn--primary btn--lg" href="/demo">Explorer la démo</a>
     <a class="btn btn--secondary btn--lg" href="/connexion">Connexion</a>
   </div>
+  <p class="text-small"><a href="/methodologie">Comment sont faits les calculs ?</a></p>
   <?php if ($isPortfolio): ?>
     <p class="text-small text-tertiary">Cette instance est une démonstration : elle n'accepte aucune donnée réelle.</p>
   <?php endif; ?>

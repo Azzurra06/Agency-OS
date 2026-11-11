@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http;
 
 use App\App;
+use App\Http\Controllers\Api\DashboardApiController;
 use App\Http\Controllers\Api\DiagnosticApiController;
 use App\Http\Controllers\Api\FinancialProfileApiController;
 use App\Http\Controllers\Api\HealthController;
@@ -13,6 +14,7 @@ use App\Http\Controllers\Api\PricingApiController;
 use App\Http\Controllers\Api\RecurringApiController;
 use App\Http\Controllers\Api\StrategyApiController;
 use App\Http\Controllers\Api\ServicesApiController;
+use App\Http\Controllers\Pages\AccountPagesController;
 use App\Http\Controllers\Pages\AppPagesController;
 use App\Http\Controllers\Pages\AuthPagesController;
 use App\Http\Controllers\Pages\DiagnosticPagesController;
@@ -46,6 +48,7 @@ final class Routes
         $recurringPages = new RecurringPagesController($app);
         $strategy = new StrategyApiController($app);
         $strategyPages = new StrategyPagesController($app);
+        $account = new AccountPagesController($app);
         $p = Route::ACCESS_PUBLIC;
 
         // Public
@@ -54,6 +57,13 @@ final class Routes
         $r->add('GET', '/demo', $demo->show(...), $p, true, true);
         $r->add('POST', '/demo', $demo->start(...), $p);
         $r->add('GET', '/demo/expiree', $public->demoExpired(...), $p);
+        $r->add('GET', '/methodologie', $public->methodology(...), $p);
+        $r->add('GET', '/mentions-legales', $public->legal(...), $p);
+        $r->add('GET', '/confidentialite', $public->privacy(...), $p);
+        $r->add('GET', '/compte/suppression/{token}', $account->deletionConfirmForm(...), $p, true, true);
+        $r->add('POST', '/compte/suppression', $account->deletionConfirm(...), $p);
+        $r->add('GET', '/compte/annulation/{token}', $account->cancelForm(...), $p, true, true);
+        $r->add('POST', '/compte/annulation', $account->cancel(...), $p);
         $r->add('GET', '/connexion', $auth->loginForm(...), $p, true, true);
         $r->add('POST', '/connexion', $auth->login(...), $p);
         $r->add('GET', '/inscription', $auth->registerInfo(...), $p);
@@ -74,6 +84,13 @@ final class Routes
         $r->add('GET', '/app/parametres/agence', $pages->settingsAgency(...), 'app.read');
         $r->add('GET', '/app/parametres/finances', $pages->settingsFinance(...), 'finance.read');
         $r->add('GET', '/app/parametres/prestations', $pages->settingsServices(...), 'app.read');
+        $r->add('GET', '/app/parametres/compte', $account->account(...), 'app.read');
+        $r->add('GET', '/app/parametres/securite', $account->security(...), 'app.read');
+        $r->add('GET', '/app/parametres/donnees', $account->data(...), 'app.read');
+        $r->add('POST', '/app/parametres/compte/mot-de-passe', $account->changePassword(...), 'app.read', false);
+        $r->add('POST', '/app/parametres/securite/deconnexion-globale', $account->revokeSessions(...), 'app.read', false);
+        $r->add('POST', '/app/parametres/donnees/export', $account->export(...), 'app.read', false);
+        $r->add('POST', '/app/parametres/donnees/suppression', $account->requestDeletion(...), 'organization.write', false);
         $r->add('GET', '/app/diagnostic', $diagnosticPages->home(...), 'app.read');
         $r->add('GET', '/app/diagnostic/questionnaire', $diagnosticPages->questionnaire(...), 'app.read');
         $r->add('GET', '/app/diagnostic/resultats/{id}', $diagnosticPages->results(...), 'app.read');
@@ -135,6 +152,7 @@ final class Routes
         $r->add('POST', '/api/v1/recurring/scenarios/{id}/finalize', $recurring->finalize(...), 'recurring.write');
         $r->add('POST', '/api/v1/recurring/scenarios/{id}/new-version', $recurring->newVersion(...), 'recurring.write');
         $r->add('POST', '/api/v1/recurring/scenarios/{id}/archive', $recurring->archive(...), 'recurring.write');
+        $r->add('GET', '/api/v1/dashboard/history', (new DashboardApiController($app))->history(...), 'app.read');
         $r->add('GET', '/api/v1/recommendations', $strategy->index(...), 'app.read');
         $r->add('POST', '/api/v1/recommendations/evaluate', $strategy->evaluate(...), 'strategy.write');
         $r->add('POST', '/api/v1/recommendations/{id}/accept', $strategy->accept(...), 'strategy.write');
