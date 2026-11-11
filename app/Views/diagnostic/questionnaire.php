@@ -66,6 +66,6 @@ $isLast = $draft['step'] === $draft['steps'];
         <a class="btn btn--primary" href="/app/diagnostic/questionnaire?etape=<?= attr($draft['step'] + 1) ?>">Dimension suivante<?= ui_icon('chevron-right', 'sm') ?></a>
       <?php endif; ?>
     </div>
-    <p class="text-small text-secondary" data-diag-remaining><?= e($progress['answered']) ?> réponse(s) sur <?= e($progress['applicable']) ?>. Vous pourrez terminer quand toutes les questions auront une réponse (« Je ne sais pas » compris).</p>
+    <p class="text-small text-secondary" data-diag-remaining><?= e($progress['answered']) ?> réponse(s) sur <?= e($progress['applicable']) ?>. Vous pouvez terminer avec des questions sans réponse : les dimensions trop incomplètes seront marquées « Données insuffisantes ».</p>
   </form>
 </div>

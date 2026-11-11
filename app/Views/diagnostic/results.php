@@ -3,7 +3,7 @@
 /** @var bool $isDemo */
 use App\Support\Format;
 
-/** @var array<string, array{code: string, label: string, description: string, score: string|null, score_display: string|null, level: string|null, scorable: bool, applicable: int, scored: int, unknown_excluded: int, unknown_evaluable: int, reliability: string, unknown_questions: list<array{code: string, text: string}>}> $dimensions */
+/** @var array<string, array{code: string, label: string, description: string, score: string|null, score_display: string|null, level: string|null, scorable: bool, applicable: int, scored: int, unknown_excluded: int, unknown_evaluable: int, reliability: string, unanswered: int, unknown_questions: list<array{code: string, text: string, reason: string}>}> $dimensions */
 $dimensions = $results['dimensions'];
 /** @var list<string> $strengths */
 $strengths = $results['strengths'];
@@ -15,7 +15,8 @@ $partial = $results['global_display'] === null;
 $date = Format::date(substr((string) $results['completed_at'], 0, 10));
 $radar = ['labels' => [], 'values' => []];
 foreach ($dimensions as $d) {
-    $radar['labels'][] = $d['scorable'] ? $d['label'] : $d['label'] . ' (insuffisant)';
+    $short = explode(' ', $d['label'])[0]; // libellé court : l'axe reste lisible sur mobile
+    $radar['labels'][] = $d['scorable'] ? $short : $short . ' (insuffisant)';
     $radar['values'][] = $d['scorable'] && $d['score'] !== null ? (float) $d['score'] : null;
 }
 $radarLabel = implode(', ', array_map(static fn (array $d): string => $d['label'] . ' ' . ($d['scorable'] ? $d['score_display'] : 'données insuffisantes'), $dimensions));
@@ -23,7 +24,7 @@ $missing = [];
 foreach ($dimensions as $d) {
     if (!$d['scorable']) {
         foreach ($d['unknown_questions'] as $q) {
-            $missing[] = $d['label'] . ' : ' . $q['text'];
+            $missing[] = $d['label'] . ' : ' . $q['text'] . ($q['reason'] === 'unanswered' ? ' (sans réponse)' : ' (« Je ne sais pas »)');
         }
     }
 }
@@ -73,6 +74,7 @@ $delta = static function (?string $value): string {
     <?= ui_icon('triangle-alert', 'sm') ?>
     <div class="stack stack--sm">
       <p class="alert__title" id="t-missing">Informations manquantes</p>
+      <p>Ces dimensions n'ont pas assez de réponses exploitables (au moins 3 et 60 % des questions) pour être calculées.</p>
       <ul class="diag-missing"><?php foreach ($missing as $line): ?><li><?= e($line) ?></li><?php endforeach; ?></ul>
       <?php if ($results['can_copy']): ?><div><button class="btn btn--secondary btn--sm" type="button" data-diagnostic-start data-from="<?= attr($results['public_id']) ?>">Compléter ces réponses</button></div><?php endif; ?>
     </div>
@@ -129,7 +131,7 @@ $delta = static function (?string $value): string {
           </span>
         </div>
         <div class="progress"><span class="progress__bar" data-value="<?= attr($d['scorable'] ? $d['score_display'] : 0) ?>"></span></div>
-        <p class="text-small text-secondary"><?= e(sprintf('%d réponse(s) exploitable(s) sur %d', $d['scored'], $d['applicable'])) ?><?php if ($d['unknown_excluded'] > 0): ?> · <?= e($d['unknown_excluded']) ?> inconnue(s)<?php endif; ?><?php if ($d['unknown_evaluable'] > 0): ?> · <?= e($d['unknown_evaluable']) ?> comptée(s) comme pratique absente<?php endif; ?></p>
+        <p class="text-small text-secondary"><?= e(sprintf('%d réponse(s) exploitable(s) sur %d', $d['scored'], $d['applicable'])) ?><?php if ($d['unknown_excluded'] > 0): ?> · <?= e($d['unknown_excluded']) ?> inconnue(s)<?php endif; ?><?php if ($d['unanswered'] > 0): ?> · <?= e($d['unanswered']) ?> sans réponse<?php endif; ?><?php if ($d['unknown_evaluable'] > 0): ?> · <?= e($d['unknown_evaluable']) ?> comptée(s) comme pratique absente<?php endif; ?></p>
       </div>
     <?php endforeach; ?>
   </div>

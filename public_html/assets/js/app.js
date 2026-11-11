@@ -71,13 +71,14 @@ function toast(message) {
   setTimeout(() => item.remove(), 5000);
 }
 
-function confirmAction(title, text, okLabel) {
+function confirmAction(title, text, okLabel, tone = 'danger') {
   const dialog = document.querySelector('[data-confirm-dialog]');
   if (!dialog || typeof dialog.showModal !== 'function') return Promise.resolve(false);
   dialog.querySelector('[data-confirm-title]').textContent = title;
   dialog.querySelector('[data-confirm-text]').textContent = text;
   const ok = dialog.querySelector('[data-confirm-ok]');
   ok.textContent = okLabel;
+  ok.className = `btn ${tone === 'primary' ? 'btn--primary' : 'btn--danger'}`;
   return new Promise((resolve) => {
     const close = (value) => {
       dialog.close();
@@ -261,7 +262,7 @@ if (diagForm) {
     if (remaining) {
       remaining.textContent = progress.ready
         ? 'Toutes les questions ont une réponse : vous pouvez terminer le diagnostic.'
-        : `${progress.answered} réponse(s) sur ${progress.applicable}. Vous pourrez terminer quand toutes les questions auront une réponse (« Je ne sais pas » compris).`;
+        : `${progress.answered} réponse(s) sur ${progress.applicable}. Vous pouvez terminer avec des questions sans réponse : les dimensions trop incomplètes seront marquées « Données insuffisantes ».`;
     }
   };
 
@@ -291,21 +292,37 @@ if (diagForm) {
 
   document.querySelector('[data-diagnostic-complete]')?.addEventListener('click', async (event) => {
     const button = event.currentTarget;
+    const summary = diagForm.querySelector('[data-form-summary]');
+    const fail = (error) => {
+      button.removeAttribute('aria-busy');
+      if (summary) {
+        summary.hidden = false;
+        summary.textContent = error?.fields?.answers ?? error?.message ?? 'Erreur.';
+      }
+    };
     button.setAttribute('aria-busy', 'true');
     await pending;
-    const result = await api('POST', `/api/v1/diagnostics/${encodeURIComponent(id)}/complete`, {});
+    const url = `/api/v1/diagnostics/${encodeURIComponent(id)}/complete`;
+    let result = await api('POST', url, {});
+    if (!result.ok && result.status === 422 && /sans réponse/.test(result.error?.fields?.answers ?? '')) {
+      // Questions sans réponse : clôture « partielle » seulement après confirmation explicite.
+      const ok = await confirmAction(
+        'Terminer avec des réponses manquantes ?',
+        `${result.error.fields.answers} Elles seront exclues du calcul : les dimensions trop incomplètes apparaîtront « Données insuffisantes » et le score global ne sera affiché que si les 6 dimensions sont calculables. Vous pourrez compléter plus tard.`,
+        'Terminer quand même',
+        'primary',
+      );
+      if (!ok) {
+        button.removeAttribute('aria-busy');
+        return;
+      }
+      result = await api('POST', url, { accept_missing: true });
+    }
     if (result.ok) {
       window.location.assign(result.data.results_url);
       return;
     }
-    button.removeAttribute('aria-busy');
-    const summary = diagForm.querySelector('[data-form-summary]');
-    if (summary) {
-      summary.hidden = false;
-      summary.textContent = result.error?.fields?.answers
-        ? `Impossible de terminer : ${result.error.fields.answers} Revenez sur les étapes non cochées.`
-        : (result.error?.message ?? 'Erreur.');
-    }
+    fail(result.error);
   });
 }
 

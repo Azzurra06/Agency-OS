@@ -141,7 +141,7 @@ Même cycle (`draft`, `finalized`, `superseded`, `archived`), avec l'action **«
                             └──« Compléter ces réponses »──► nouveau [draft] prérempli avec les réponses précédentes (même version si elle est toujours en vigueur)
 ```
 
-Un seul brouillon à la fois par organisation. Un diagnostic terminé est figé ; il est référencé par les recommandations et les instantanés.
+Un seul brouillon à la fois par organisation. La clôture avec des questions sans réponse exige une confirmation explicite (elles sont exclues du calcul ; diagnostic partiel). Un diagnostic terminé est figé ; il est référencé par les recommandations et les instantanés.
 
 ### 3.4 Recommandation
 

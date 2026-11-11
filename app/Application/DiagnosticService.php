@@ -92,23 +92,29 @@ final class DiagnosticService
     }
 
     /**
-     * Clôture : toutes les questions applicables doivent avoir une réponse (« Je ne sais pas » compris).
+     * Clôture. Par défaut, toutes les questions applicables doivent avoir une réponse (« Je ne sais pas » compris).
+     * Avec $acceptMissing (confirmation explicite de l'utilisateur), les questions sans réponse sont exclues du calcul,
+     * comme une réponse inconnue : les dimensions trop incomplètes deviennent « Données insuffisantes » et le diagnostic
+     * est « partiel ». Au moins une dimension doit rester calculable.
      *
-     * @return array{public_id: string, completeness: string}
+     * @return array{public_id: string, completeness: string, missing: int}
      */
-    public function complete(OrgId $org, string $publicId): array
+    public function complete(OrgId $org, string $publicId, bool $acceptMissing = false): array
     {
         $draft = $this->requireDraft($org, $publicId);
         $questionnaire = QuestionnaireRegistry::get($draft['questionnaire_version']);
         $result = $this->scorer->score($questionnaire, $this->options($org, $draft['id']), $this->context($org));
-        if (!$result->isComplete()) {
+        if (!$result->isComplete() && !$acceptMissing) {
             throw new ValidationException(['answers' => sprintf('%d question(s) sans réponse.', count($result->missing))]);
+        }
+        if (count($result->unscorableDimensions()) === count($result->dimensions)) {
+            throw new ValidationException(['answers' => 'Répondez au moins à une dimension complète pour obtenir un résultat.']);
         }
         if (!$this->repository->complete($org, $draft['id'], $result, DiagnosticScorer::CALC_VERSION)) {
             throw new ValidationException(['status' => 'Ce diagnostic est déjà terminé.']);
         }
 
-        return ['public_id' => $publicId, 'completeness' => $result->completeness()];
+        return ['public_id' => $publicId, 'completeness' => $result->completeness(), 'missing' => count($result->missing)];
     }
 
     public function discardDraft(OrgId $org, string $publicId): bool
@@ -246,6 +252,7 @@ final class DiagnosticService
         $scores = $this->repository->scores($org, $diagnostic['id']);
         $result = $this->frozenResult($questionnaire, $scores);
         $answers = $this->options($org, $diagnostic['id']);
+        $applicable = array_flip($this->scorer->applicableQuestions($questionnaire, $answers, $this->context($org)));
 
         $dimensions = [];
         foreach ($questionnaire->dimensions as $code => $dimension) {
@@ -255,8 +262,11 @@ final class DiagnosticService
             }
             $unknownQuestions = [];
             foreach ($dimension['questions'] as $questionCode => $question) {
-                if (($answers[$questionCode] ?? null) === Questionnaire::UNKNOWN && $question['unknown_policy'] === 'unknown') {
-                    $unknownQuestions[] = ['code' => $questionCode, 'text' => $question['text']];
+                $answer = $answers[$questionCode] ?? null;
+                if ($answer === null && isset($applicable[$questionCode])) {
+                    $unknownQuestions[] = ['code' => $questionCode, 'text' => $question['text'], 'reason' => 'unanswered'];
+                } elseif ($answer === Questionnaire::UNKNOWN && $question['unknown_policy'] === 'unknown') {
+                    $unknownQuestions[] = ['code' => $questionCode, 'text' => $question['text'], 'reason' => 'unknown'];
                 }
             }
             $score = $s['score'] === null ? null : Decimal::of($s['score']);
@@ -272,6 +282,7 @@ final class DiagnosticService
                 'scored' => $s['scored_count'],
                 'unknown_excluded' => $s['unknown_excluded_count'],
                 'unknown_evaluable' => $s['unknown_evaluable_count'],
+                'unanswered' => $s['applicable_count'] - $s['scored_count'] - $s['unknown_excluded_count'],
                 'reliability' => $s['reliability'],
                 'unknown_questions' => $unknownQuestions,
             ];

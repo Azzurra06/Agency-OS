@@ -113,7 +113,6 @@
 
 **Compatibilité MySQL 8.** La CI a détecté que MySQL 8 (contrairement à MariaDB) refuse une clé étrangère `ON DELETE CASCADE` sur une colonne de base d'une colonne générée stockée : la colonne `draft_key` ne dérive plus que de `status`, avec un index unique (`organization_id`, `draft_key`). La même règle est reportée dans 05 pour les simulations du lot 3.
 
-**Constat à signaler.** Avec le questionnaire v1 tel que validé, une seule question par dimension au plus a la politique « inconnue » : une clôture (qui exige une réponse à chaque question applicable) ne peut donc **jamais** produire de dimension non calculable. Le statut « Diagnostic partiel » est entièrement implémenté et testé (écrit directement en base dans le test), mais il ne pourra apparaître qu'avec une future version du questionnaire comportant davantage de questions « inconnues ».
+**Diagnostic partiel (ajouté à ta demande).** Avec le questionnaire v1, une seule question par dimension a la politique « inconnue » : une clôture complète ne peut donc pas produire de dimension non calculable. Plutôt que de changer le sens des questions (une pratique qu'on ignore reste une pratique absente), la clôture est désormais possible **avec des questions sans réponse, après confirmation explicite** (« Terminer quand même ») : elles sont exclues du calcul comme une réponse inconnue, les dimensions trop incomplètes sont « Données insuffisantes », le score global n'est pas affiché et l'encadré « Informations manquantes » liste chaque question (« sans réponse » ou « Je ne sais pas ») avec **[Compléter ces réponses]**. La clôture reste refusée si aucune dimension n'est calculable. Règle reportée dans 03 §6.3 et 05 §3.3 ; le fichier v1 n'est pas modifié (empreinte inchangée).
 
-**Total : 168 tests, 1 749 assertions**, PHPStan niveau max sans erreur, aucun motif interdit.
-
+**Total : 168 tests, 1 788 assertions**, PHPStan niveau max sans erreur, aucun motif interdit.

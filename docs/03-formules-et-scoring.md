@@ -317,7 +317,10 @@ Par dimension :
 Dimension calculable   si  n ≥ 3  ET  Fd ≥ 0,60
 Score global Sg        = moyenne simple des 6 Sd (non arrondis), calculé SEULEMENT si les 6 dimensions sont calculables
 Fiabilité globale Fg   = Σ n ÷ Σ A
-Clôture du diagnostic  possible seulement si toutes les questions applicables ont une réponse (« Je ne sais pas » compris)
+Clôture du diagnostic  normale si toutes les questions applicables ont une réponse (« Je ne sais pas » compris) ;
+                       sinon, seulement après confirmation explicite (« Terminer quand même ») : les questions
+                       sans réponse sont exclues du calcul comme une réponse inconnue (Ue) ; refusée si aucune
+                       dimension n'est calculable
 ```
 
 | Fiabilité globale | Libellé affiché à côté du score |
@@ -328,7 +331,7 @@ Clôture du diagnostic  possible seulement si toutes les questions applicables o
 
 Le nombre de réponses `Up` (comptées comme pratique absente) est également affiché.
 
-**Diagnostic partiel.** Si au moins une dimension n'est pas calculable, le diagnostic terminé porte le statut **« Diagnostic partiel »** :
+**Diagnostic partiel.** (Décision du 11/11/2026 : avec le questionnaire v1, une seule question par dimension a la politique `unknown` ; le statut partiel n'est donc atteignable que par une clôture confirmée avec des questions sans réponse.) Si au moins une dimension n'est pas calculable, le diagnostic terminé porte le statut **« Diagnostic partiel »** :
 - les scores des dimensions calculables sont affichés ; les autres apparaissent « Données insuffisantes », avec la liste des questions restées inconnues et un bouton « Compléter ces réponses » (qui crée un nouveau diagnostic prérempli) ;
 - **le score global n'est pas affiché** : « Score global disponible lorsque les 6 dimensions sont renseignées » ;
 - le radar grise les axes non calculables, sans les placer à 0 ;

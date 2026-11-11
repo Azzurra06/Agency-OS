@@ -62,9 +62,9 @@ final class DiagnosticApiController extends Controller
     {
         $id = $request->param('id');
 
-        return $this->withJson($request, function () use ($request, $id): Response {
+        return $this->withJson($request, function (array $input) use ($request, $id): Response {
             try {
-                $done = $this->app->diagnostics()->complete($this->org($request), $id);
+                $done = $this->app->diagnostics()->complete($this->org($request), $id, ($input['accept_missing'] ?? false) === true);
             } catch (NotFoundException) {
                 return $this->notFound($request, $id);
             }

@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace Tests\Functional;
 
 use App\Application\DemoService;
-use App\Domain\Diagnostic\DiagnosticScorer;
-use App\Domain\Diagnostic\QuestionnaireRegistry;
 use App\Infrastructure\Database\OrgId;
 use App\Http\Response;
 use Tests\Support\DatabaseTestCase;
@@ -79,6 +77,7 @@ final class DiagnosticFlowTest extends DatabaseTestCase
         self::assertSame(422, $this->send('PUT', "/api/v1/diagnostics/{$id}/answers", ['question' => 'pos.target', 'option' => 'n4'])->status);
         self::assertSame(422, $this->send('PUT', "/api/v1/diagnostics/{$id}/answers", ['question' => 'zzz.nope', 'option' => 'n1'])->status);
         self::assertSame(422, $this->send('POST', "/api/v1/diagnostics/{$id}/complete", [])->status);
+        self::assertSame(422, $this->send('POST', "/api/v1/diagnostics/{$id}/complete", ['accept_missing' => true])->status, 'Aucune dimension calculable : refus même confirmé.');
 
         $this->answerAll($id, DemoService::LUMEN_DIAGNOSTIC);
         $page = $this->send('GET', '/app/diagnostic/questionnaire?etape=3');
@@ -139,37 +138,45 @@ final class DiagnosticFlowTest extends DatabaseTestCase
         self::assertSame(404, $this->send('DELETE', "/api/v1/diagnostics/{$id}")->status, 'Un diagnostic terminé ne se supprime pas.');
     }
 
-    public function testPartialDiagnosticDisplay(): void
+    public function testPartialDiagnosticAfterExplicitConfirmation(): void
     {
-        // Avec le questionnaire v1, une clôture complète ne peut pas produire de dimension non calculable (au plus une
-        // question « inconnue » par dimension). Le cas partiel est donc écrit directement en base (cas DIAG-2) pour
-        // vérifier son affichage, prévu pour les versions futures du questionnaire.
-        $member = $this->member('partial@example.test');
-        $org = new OrgId($member['org_id']);
+        $this->member('partial@example.test');
+        $id = self::data($this->send('POST', '/api/v1/diagnostics', []))['public_id'];
         $answers = DemoService::LUMEN_DIAGNOSTIC;
-        unset($answers['str.vision'], $answers['str.review'], $answers['str.capacity_plan']);
-        $repo = $this->app->diagnosticRepository();
-        $id = (string) $repo->createDraft($org, $member['user_id'], 'v1', DiagnosticScorer::CALC_VERSION);
-        $draft = $repo->find($org, $id);
-        self::assertNotNull($draft);
-        foreach ($answers as $question => $option) {
-            $repo->saveAnswer($org, $draft['id'], $question, $option, false);
-        }
-        $result = (new DiagnosticScorer())->score(QuestionnaireRegistry::current(), $answers, ['team_size' => 4]);
-        self::assertTrue($repo->complete($org, $draft['id'], $result, DiagnosticScorer::CALC_VERSION));
+        unset($answers['str.vision'], $answers['str.review'], $answers['str.capacity_plan']); // cas DIAG-2 : 2 réponses sur 5
+        $this->answerAll($id, $answers);
+
+        $refused = $this->send('POST', "/api/v1/diagnostics/{$id}/complete", []);
+        self::assertSame(422, $refused->status, 'Sans confirmation, la clôture reste refusée.');
+        self::assertStringContainsString('3 question(s) sans réponse.', $refused->body);
+
+        $done = self::data($this->send('POST', "/api/v1/diagnostics/{$id}/complete", ['accept_missing' => true]));
+        self::assertSame('partial', $done['completeness']);
+        self::assertSame(3, $done['missing']);
 
         $results = self::data($this->send('GET', "/api/v1/diagnostics/{$id}/results"));
-        self::assertSame('partial', $results['completeness']);
         self::assertNull($results['global']);
         self::assertSame(5, $results['scorable_count']);
         self::assertFalse($results['dimensions']['str']['scorable']);
-        self::assertNotContains('str', $results['weaknesses']);
+        self::assertSame(3, $results['dimensions']['str']['unanswered']);
+        self::assertSame('unanswered', $results['dimensions']['str']['unknown_questions'][0]['reason']);
+        self::assertNotContains('str', $results['weaknesses'], 'Une dimension non calculable n\'est jamais un axe d\'amélioration.');
         $html = $this->send('GET', "/app/diagnostic/resultats/{$id}")->body;
         self::assertStringContainsString('Diagnostic partiel : 5/6 dimensions', $html);
         self::assertStringContainsString('Score global disponible lorsque les 6 dimensions sont renseignées.', $html);
         self::assertStringContainsString('Données insuffisantes', $html);
-        self::assertStringContainsString('Stratégie et développement (insuffisant)', $html);
+        self::assertStringContainsString('(sans réponse)', $html);
+        self::assertStringContainsString('Compléter ces réponses', $html);
+        self::assertStringContainsString('Stratégie (insuffisant)', $html);
         self::assertStringContainsString('Diagnostic partiel', $this->send('GET', '/app')->body);
+
+        // « Compléter ces réponses » : nouveau brouillon avec les 27 réponses ; une fois complété, diagnostic complet.
+        $copyId = self::data($this->send('POST', '/api/v1/diagnostics', ['from' => $id]))['public_id'];
+        $this->answerAll($copyId, ['str.vision' => 'n1', 'str.review' => 'n1', 'str.capacity_plan' => 'n1']);
+        self::assertSame('complete', self::data($this->send('POST', "/api/v1/diagnostics/{$copyId}/complete", []))['completeness']);
+        $comparison = self::data($this->send('GET', "/api/v1/diagnostics/{$copyId}/results"))['comparison'];
+        self::assertTrue($comparison['same_method']);
+        self::assertSame('0', $comparison['deltas']['pos']);
     }
 
     public function testIsolationBetweenAgencies(): void
