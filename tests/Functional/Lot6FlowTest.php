@@ -144,6 +144,25 @@ final class Lot6FlowTest extends DatabaseTestCase
         self::assertStringContainsString('Évaluable (0 point)', $this->app->kernel()->handle(RequestFactory::make('GET', '/methodologie'))->body);
     }
 
+    public function testGlossaryIsPublicAndLinkedFromBubbles(): void
+    {
+        $_SESSION = [];
+        $response = $this->app->kernel()->handle(RequestFactory::make('GET', '/glossaire'));
+        self::assertSame(200, $response->status);
+        self::assertStringContainsString('MRR (revenu récurrent mensuel)', $response->body);
+        self::assertStringContainsString('id="cout-horaire"', $response->body);
+        self::assertStringContainsString('Coût horaire de revient', $response->body);
+        self::assertNull($response->header('Set-Cookie'), 'Page publique : aucun cookie.');
+
+        $this->account();
+        $inApp = $this->send('GET', '/app/glossaire');
+        self::assertSame(200, $inApp->status);
+        self::assertStringContainsString('aria-current="page"><svg class="icon" aria-hidden="true"><use href="/assets/icons/sprite.svg#i-circle-help"></use></svg><span class="nav__label">Glossaire', $inApp->body);
+        $finance = $this->send('GET', '/app/parametres/finances');
+        self::assertStringContainsString('href="/app/glossaire#etp"', $finance->body);
+        self::assertStringContainsString('Exemple :', $finance->body);
+    }
+
     public function testPasswordChangeAndExport(): void
     {
         $this->account();

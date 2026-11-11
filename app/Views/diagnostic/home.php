@@ -9,7 +9,7 @@ $latest = $overview['latest'];
 <header class="page-header">
   <div class="page-header__titles">
     <p class="eyebrow">Module Diagnostic · questionnaire v1</p>
-    <div class="card__title"><h1>Diagnostic de maturité</h1><?= ui_tip('tip-diag', 'Diagnostic de maturité', 'Comment fonctionne le diagnostic ?', '30 questions réparties en six dimensions à poids égaux, environ 10 minutes. Chaque réponse vaut de 0 à 3 points ; le score de chaque dimension est ramené sur 100. Vos réponses sont enregistrées automatiquement : vous pouvez reprendre plus tard.') ?></div>
+    <div class="card__title"><h1>Diagnostic de maturité</h1><?= ui_tip('tip-diag', 'Diagnostic de maturité', 'Comment fonctionne le diagnostic ?', '30 questions simples, environ 10 minutes, pour noter votre agence sur six sujets. Chaque réponse rapporte de 0 à 3 points, et chaque sujet reçoit une note sur 100. Vos réponses sont enregistrées automatiquement : vous pouvez reprendre plus tard.', [], 'start', '« Connaissez-vous votre coût horaire de revient ? » Oui, calculé et mis à jour chaque année → 3 points ; non → 0 point.', '/app/glossaire#score-maturite') ?></div>
     <p class="page-header__sub">Positionnement, acquisition, rentabilité, organisation, fidélisation et stratégie. <a href="/methodologie#diagnostic">Méthodologie</a></p>
   </div>
   <div class="cluster">

@@ -62,7 +62,7 @@ $chart = ['labels' => array_map(static fn (array $m): string => 'M' . $m['month'
           <th scope="col">Formule</th>
           <th scope="col">Clients au départ</th>
           <th scope="col">Nouveaux par mois</th>
-          <th scope="col"><span class="compare-head">Résiliations par mois<?= ui_tip('tip-churn', 'Résiliations', 'Taux de résiliation mensuel', 'Part des clients qui résilient chaque mois. 3 % par mois signifie qu\'environ un tiers des clients partent en un an.') ?></span></th>
+          <th scope="col"><span class="compare-head">Résiliations par mois<?= ui_term('churn') ?></span></th>
         </tr></thead>
         <tbody>
           <?php foreach ($view['entries'] as $e): if ($e['offer'] === null) { continue; } ?>
@@ -94,7 +94,7 @@ $chart = ['labels' => array_map(static fn (array $m): string => 'M' . $m['month'
 <p class="alert alert--warning" data-p-capacity<?php if (!($p['capacity_exceeded'] ?? false)): ?> hidden<?php endif; ?>><?= ui_icon('triangle-alert', 'sm') ?><span>La projection dépasse votre capacité de production mensuelle : prévoyez un recrutement ou de la sous-traitance.</span></p>
 
 <section class="card" aria-labelledby="t-chart">
-  <div class="card__header"><div class="card__title"><h2 id="t-chart">MRR simulé, mois par mois</h2><?= ui_tip('tip-chart', 'Projection', 'Lire la projection', 'Courbe en pointillés : valeurs simulées. Nₜ = Nₜ₋₁ × (1 − résiliations) + nouveaux clients ; MRR = clients × prix mensuel normalisé.') ?></div><?= ui_nature('simulated') ?></div>
+  <div class="card__header"><div class="card__title"><h2 id="t-chart">MRR simulé, mois par mois</h2><?= ui_tip('tip-chart', 'Projection', 'Lire la projection', 'La courbe en pointillés montre comment votre MRR pourrait évoluer mois après mois : chaque mois, on retire les clients qui résilient et on ajoute les nouveaux. Ce sont des valeurs simulées.', ['Clients du mois = clients du mois précédent × (1 − résiliations) + nouveaux clients', 'MRR = clients × prix mensuel'], 'start', '100 clients, 3 % de résiliations, 5 nouveaux par mois → 102 clients le mois suivant.', '/app/glossaire#mrr') ?></div><?= ui_nature('simulated') ?></div>
   <div class="chart-box"><canvas id="chart-projection" role="img" aria-label="<?= attr('MRR simulé : ' . implode(', ', array_map(static fn (array $m): string => 'mois ' . $m['month'] . ' ' . Format::money($m['mrr'], 0), $months))) ?>"></canvas></div>
   <script type="application/json" id="data-projection"><?= json_script($chart) ?></script>
   <div class="table-wrap">

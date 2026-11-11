@@ -102,7 +102,7 @@ $base = '/app/pricing/' . $sim['public_id'];
 
       <div class="form-section">
         <div class="form-section__head">
-          <div class="card__title"><h3>Coût horaire</h3><?= ui_tip('tip-hc', 'Coût horaire', 'Coût horaire complet', 'Coût d\'une heure facturable : (charges fixes + personnel + rémunération du dirigeant) ÷ heures facturables annuelles. « Suivre le profil » utilise la valeur calculée ; « Personnalisé » la remplace pour ce scénario uniquement.') ?></div>
+          <div class="card__title"><h3>Coût horaire</h3><?= ui_term('cout-horaire', '« Suivre le profil » utilise la valeur calculée ; « Personnalisé » la remplace pour ce scénario uniquement.', 'start', [], '-pricing') ?></div>
           <span data-r-hc-nature><?= ui_nature($hc['nature'] === 'assumption' ? 'assumption' : 'calculated', $hc['source'] === 'custom' ? 'Saisi pour ce scénario' : ($hc['assumptions'] === [] ? 'Calculé' : 'Calculé avec hypothèses')) ?></span>
         </div>
         <div class="segmented" role="radiogroup" aria-label="Origine du coût horaire">
@@ -119,7 +119,7 @@ $base = '/app/pricing/' . $sim['public_id'];
 
       <div class="form-section">
         <div class="form-section__head">
-          <div class="card__title"><h3>Temps estimé</h3><?= ui_tip('tip-time', 'Temps estimé', 'Temps estimé', 'Heures nécessaires par phase du projet. Le modèle indicatif est un point de départ entièrement modifiable, jamais une référence de marché.') ?></div>
+          <div class="card__title"><h3>Temps estimé</h3><?= ui_tip('tip-time', 'Temps estimé', 'Temps estimé', 'Le nombre d\'heures que vous pensez passer sur chaque étape du projet. Le modèle proposé est un point de départ à adapter, pas une référence de marché.', [], 'start', 'cadrage 4 h, maquettes 10 h, intégration 20 h, recette 6 h = 40 h.') ?></div>
           <?php if ($editable): ?><button class="btn btn--ghost btn--sm" type="button" data-pricing-template="<?= attr($sim['service']['category'] ?? 'custom') ?>"><?= ui_icon('file-text', 'sm') ?>Préremplir avec un modèle indicatif</button><?php endif; ?>
         </div>
         <table class="line-table"><caption class="visually-hidden">Lignes de temps</caption><tbody data-lines="time">
@@ -132,7 +132,7 @@ $base = '/app/pricing/' . $sim['public_id'];
       </div>
 
       <div class="form-section">
-        <div class="form-section__head"><div class="card__title"><h3>Frais directs du projet</h3><?= ui_tip('tip-direct', 'Frais directs', 'Frais directs', 'Dépenses propres à ce projet : licences, thème, sous-traitance… Elles s\'ajoutent au coût du temps. Les charges générales non attribuables sont traitées à part, en pourcentage du prix.') ?></div></div>
+        <div class="form-section__head"><div class="card__title"><h3>Frais directs du projet</h3><?= ui_term('frais-attribuables', 'Elles s\'ajoutent au coût du temps.') ?></div></div>
         <table class="line-table"><caption class="visually-hidden">Frais directs</caption><tbody data-lines="direct_cost">
           <?php foreach ($form['lines'] as $line): if ($line['kind'] !== 'direct_cost') { continue; } ?>
             <tr data-line="direct_cost"><td><input class="input" aria-label="Libellé du frais" maxlength="120" data-field="label" value="<?= attr($line['label']) ?>"></td><td><div class="input-affix"><input class="input num" aria-label="Montant" inputmode="decimal" data-field="amount" value="<?= attr(Format::number($line['amount'])) ?>"><span class="input-affix__unit">€</span></div></td><td><?php if ($editable): ?><button class="btn btn--ghost btn--icon btn--sm" type="button" data-line-remove aria-label="Supprimer la ligne"><?= ui_icon('x', 'sm') ?></button><?php endif; ?></td></tr>
@@ -144,12 +144,12 @@ $base = '/app/pricing/' . $sim['public_id'];
       <div class="form-section">
         <div class="two-col">
           <div class="field">
-            <div class="field__label"><label for="p-margin">Marge cible sur prix de vente</label><?= ui_tip('tip-target-margin', 'Marge cible', 'Marge cible sur prix de vente', 'Part du prix de vente que vous souhaitez conserver après tous les coûts. Attention : 30 % de marge sur prix ≠ coût × 1,3 (qui ne donne que 23 % de marge).') ?><?= ui_nature('assumption') ?></div>
+            <div class="field__label"><label for="p-margin">Marge cible sur prix de vente</label><?= ui_term('marge-cible', 'Attention : 30 % de marge sur prix ≠ coût × 1,3 (qui ne donne que 23 % de marge).') ?><?= ui_nature('assumption') ?></div>
             <div class="input-affix"><input class="input num" id="p-margin" name="target_margin_pct" data-type="decimal" inputmode="decimal" value="<?= attr(Format::number($form['target_margin_pct'])) ?>"><span class="input-affix__unit">%</span></div>
             <p class="field__error" data-error-for="target_margin_pct"></p>
           </div>
           <div class="field">
-            <div class="field__label"><label for="p-cont">Provision pour aléas</label><?= ui_tip('tip-cont', 'Aléas', 'Provision pour aléas', 'Pourcentage d\'heures ajouté pour les imprévus (allers-retours, corrections). 10 % sur 40 h donne 44 h.') ?></div>
+            <div class="field__label"><label for="p-cont">Provision pour aléas</label><?= ui_term('provision-aleas') ?></div>
             <div class="input-affix"><input class="input num" id="p-cont" name="contingency_pct" data-type="decimal" inputmode="decimal" value="<?= attr(Format::number($form['contingency_pct'])) ?>"><span class="input-affix__unit">%</span></div>
             <p class="field__error" data-error-for="contingency_pct"></p>
           </div>
@@ -160,7 +160,7 @@ $base = '/app/pricing/' . $sim['public_id'];
             <p class="field__error" data-error-for="proposed_price"></p>
           </div>
           <div class="field">
-            <span class="field__label">Charges variables générales<?= ui_tip('tip-cvg', 'Charges variables générales', 'Charges variables générales', 'Charges proportionnelles au chiffre d\'affaires mais non attribuables à un projet (frais bancaires, commissions…). Issues de votre profil, elles sont appliquées en pourcentage du prix.') ?></span>
+            <span class="field__label">Charges variables générales<?= ui_term('charges-variables-generales', 'Le taux vient de votre profil financier.') ?></span>
             <p class="num"><span data-r="variable_rate"><?= e($tvInfo['value'] === null ? '0,00 %' : Format::percent($tvInfo['value'], 2)) ?></span> du prix <?= ui_nature('calculated') ?></p>
             <p class="field__help"><?= e($tvInfo['period'] === null ? 'Issu du profil financier.' : 'Issu du profil : ' . $tvInfo['period'] . '.') ?></p>
           </div>
@@ -178,14 +178,14 @@ $base = '/app/pricing/' . $sim['public_id'];
 
   <aside class="card sim-results" aria-labelledby="t-results">
     <div class="card__header">
-      <div class="card__title"><h2 id="t-results">Résultats</h2><?= ui_tip('tip-results', 'Résultats', 'Comment ces résultats sont-ils obtenus ?', $editable ? 'Ils sont recalculés par le serveur à chaque modification (rien n\'est enregistré). Ce brouillon n\'a aucun effet sur la stratégie : seule la simulation finalisée sert de référence.' : 'Résultats figés à la finalisation, avec les hypothèses de ce jour-là. Ils ne changent plus, même si votre profil évolue.') ?><?= ui_nature($editable ? 'simulated' : 'frozen') ?></div>
+      <div class="card__title"><h2 id="t-results">Résultats</h2><?= ui_tip('tip-results', 'Résultats', 'Comment ces résultats sont-ils obtenus ?', $editable ? 'Ils sont recalculés par le serveur à chaque modification (rien n\'est enregistré). Ce brouillon n\'a aucun effet sur la stratégie : seule la simulation finalisée sert de référence.' : 'Résultats figés à la finalisation, avec les hypothèses de ce jour-là. Ils ne changent plus, même si votre profil évolue.', [], 'start', null, '/app/glossaire#simulation-finalisee') ?><?= ui_nature($editable ? 'simulated' : 'frozen') ?></div>
       <?php if ($editable): ?><span class="inline-status inline-status--ok" data-calc-status><?= ui_icon('check', 'sm') ?>À jour</span><?php endif; ?>
     </div>
     <p class="alert alert--danger" data-r-error<?php if (($computed['error'] ?? null) === null): ?> hidden<?php endif; ?>><?= ui_icon('triangle-alert', 'sm') ?><span data-r-error-text><?= e(($computed['error'] ?? null) === null ? '' : PricingService::errorMessage((string) $computed['error'])) ?></span></p>
     <div class="result-list" aria-live="polite" aria-atomic="true">
       <div class="result-line"><span class="result-line__label">Coût direct et de structure</span><span class="result-line__value" data-r="base_cost"><?= e($money($results['base_cost'] ?? null)) ?></span></div>
-      <div class="result-line"><span class="result-line__label">Prix plancher<?= ui_tip('tip-floor', 'Prix plancher', 'Prix plancher', 'Prix en dessous duquel la prestation fait perdre de l\'argent : coût direct et de structure ÷ (1 − taux de charges variables générales).') ?></span><span class="result-line__value" data-r="floor_price"><?= e($money($results['floor_price'] ?? null)) ?></span></div>
-      <div class="result-line result-line--key"><span class="result-line__label"><?= ui_icon('star', 'sm') ?>Prix recommandé<?= ui_tip('tip-reco', 'Prix recommandé', 'Prix recommandé', 'Le prix qui atteint exactement votre marge cible : coût direct et de structure ÷ (1 − marge cible − taux de charges variables générales).') ?></span><span class="result-line__value" data-r="recommended_price"><?= e($money($results['recommended_price'] ?? null)) ?></span></div>
+      <div class="result-line"><span class="result-line__label">Prix plancher<?= ui_term('prix-plancher') ?></span><span class="result-line__value" data-r="floor_price"><?= e($money($results['floor_price'] ?? null)) ?></span></div>
+      <div class="result-line result-line--key"><span class="result-line__label"><?= ui_icon('star', 'sm') ?>Prix recommandé<?= ui_term('prix-recommande') ?></span><span class="result-line__value" data-r="recommended_price"><?= e($money($results['recommended_price'] ?? null)) ?></span></div>
       <p class="text-small text-tertiary" data-r-rounded-line<?php if ($current['rounded_price'] === null): ?> hidden<?php endif; ?>>Arrondi commercial proposé : <span class="num" data-r="rounded_price"><?= e($current['rounded_price'] === null ? '' : Format::money($current['rounded_price'], 0)) ?></span></p>
     </div>
     <hr class="divider">
@@ -194,9 +194,9 @@ $base = '/app/pricing/' . $sim['public_id'];
       <div class="result-list">
         <div class="result-line"><span class="result-line__label">Coût de revient complet</span><span class="result-line__value" data-r="full_cost"><?= e($money($atPrice['full_cost'] ?? null)) ?></span></div>
         <div class="result-line"><span class="result-line__label">Résultat</span><span class="result-line__value" data-r="result"><?= e($money($atPrice['result'] ?? null)) ?></span></div>
-        <div class="result-line"><span class="result-line__label">Marge sur prix de vente<?= ui_tip('tip-margin', 'Marge sur prix de vente', 'Marge sur prix de vente', 'Résultat ÷ prix de vente (« taux de marque »). À ne pas confondre avec la majoration sur coût.') ?></span><span class="result-line__value" data-r="margin_on_price_pct"><?= e($pct($atPrice['margin_on_price_pct'] ?? null)) ?></span></div>
-        <div class="result-line"><span class="result-line__label">Majoration sur coût<?= ui_tip('tip-markup', 'Majoration sur coût', 'Majoration sur coût', 'Résultat ÷ coût de revient. Une majoration de 50 % donne une marge sur prix de vente de 33,3 %.') ?></span><span class="result-line__value" data-r="markup_on_cost_pct"><?= e($pct($atPrice['markup_on_cost_pct'] ?? null)) ?></span></div>
-        <div class="result-line" data-r-shortfall-line<?php if (($atPrice['annual_shortfall'] ?? null) === null): ?> hidden<?php endif; ?>><span class="result-line__label">Manque à gagner annuel<?= ui_tip('tip-shortfall', 'Manque à gagner', 'Manque à gagner annuel', '(Prix recommandé − prix testé) × volume annuel déclaré dans le catalogue. Ordre de grandeur, pas une prévision.') ?></span><span class="result-line__value" data-r="annual_shortfall"><?= e($money($atPrice['annual_shortfall'] ?? null)) ?></span></div>
+        <div class="result-line"><span class="result-line__label">Marge sur prix de vente<?= ui_term('marge-prix-vente', 'À ne pas confondre avec la majoration sur coût.') ?></span><span class="result-line__value" data-r="margin_on_price_pct"><?= e($pct($atPrice['margin_on_price_pct'] ?? null)) ?></span></div>
+        <div class="result-line"><span class="result-line__label">Majoration sur coût<?= ui_term('majoration-cout') ?></span><span class="result-line__value" data-r="markup_on_cost_pct"><?= e($pct($atPrice['markup_on_cost_pct'] ?? null)) ?></span></div>
+        <div class="result-line" data-r-shortfall-line<?php if (($atPrice['annual_shortfall'] ?? null) === null): ?> hidden<?php endif; ?>><span class="result-line__label">Manque à gagner annuel<?= ui_term('manque-a-gagner', 'Calculé avec le volume annuel déclaré dans votre catalogue. Ordre de grandeur, pas une prévision.') ?></span><span class="result-line__value" data-r="annual_shortfall"><?= e($money($atPrice['annual_shortfall'] ?? null)) ?></span></div>
       </div>
     </div>
     <div class="stack stack--sm" data-r-alerts>

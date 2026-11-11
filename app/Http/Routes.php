@@ -58,6 +58,7 @@ final class Routes
         $r->add('POST', '/demo', $demo->start(...), $p);
         $r->add('GET', '/demo/expiree', $public->demoExpired(...), $p);
         $r->add('GET', '/methodologie', $public->methodology(...), $p);
+        $r->add('GET', '/glossaire', $public->glossary(...), $p);
         $r->add('GET', '/mentions-legales', $public->legal(...), $p);
         $r->add('GET', '/confidentialite', $public->privacy(...), $p);
         $r->add('GET', '/compte/suppression/{token}', $account->deletionConfirmForm(...), $p, true, true);
@@ -80,6 +81,7 @@ final class Routes
         $r->add('POST', '/demo/quitter', $demo->quit(...), 'app.read');
         $r->add('GET', '/app', $pages->dashboard(...), 'app.read');
         $r->add('GET', '/app/bienvenue', $pages->onboarding(...), 'app.read');
+        $r->add('GET', '/app/glossaire', $pages->glossary(...), 'app.read');
         $r->add('GET', '/app/parametres', static fn (): Response => Response::redirect('/app/parametres/agence'), 'app.read');
         $r->add('GET', '/app/parametres/agence', $pages->settingsAgency(...), 'app.read');
         $r->add('GET', '/app/parametres/finances', $pages->settingsFinance(...), 'finance.read');

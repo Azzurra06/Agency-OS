@@ -7,9 +7,10 @@ namespace App\Http\Controllers\Pages;
 use App\Http\Controllers\Controller;
 use App\Http\Request;
 use App\Http\Response;
+use App\Support\Glossary;
 
 /**
- * Écrans de l'application : vue d'ensemble, onboarding, paramètres.
+ * Écrans de l'application : vue d'ensemble, onboarding, glossaire, paramètres.
  */
 final class AppPagesController extends Controller
 {
@@ -44,6 +45,15 @@ final class AppPagesController extends Controller
             'step' => $step,
             'values' => $this->app->financialProfiles()->formValues($org),
             'services' => $this->app->serviceRepository()->all($org),
+        ]);
+    }
+
+    public function glossary(Request $request): Response
+    {
+        return $this->screen($request, 'pages/glossary', 'glossaire', 'Glossaire', [
+            'groups' => Glossary::byCategory(),
+            'categories' => Glossary::CATEGORIES,
+            'inApp' => true,
         ]);
     }
 

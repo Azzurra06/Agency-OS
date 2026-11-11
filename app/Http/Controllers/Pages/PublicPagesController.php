@@ -8,10 +8,11 @@ use App\App;
 use App\Domain\Diagnostic\QuestionnaireRegistry;
 use App\Http\Request;
 use App\Http\Response;
+use App\Support\Glossary;
 use App\Support\View;
 
 /**
- * Pages publiques : accueil, démonstration expirée, méthodologie, mentions légales, confidentialité.
+ * Pages publiques : accueil, démonstration expirée, méthodologie, glossaire, mentions légales, confidentialité.
  */
 final class PublicPagesController
 {
@@ -35,6 +36,16 @@ final class PublicPagesController
     public function methodology(Request $request): Response
     {
         return Response::html(View::render('pages/methodology', ['title' => 'Méthodologie', 'wide' => true, 'questionnaire' => QuestionnaireRegistry::current()], 'layouts/minimal'));
+    }
+
+    public function glossary(Request $request): Response
+    {
+        return Response::html(View::render('pages/glossary', [
+            'title' => 'Glossaire',
+            'wide' => true,
+            'groups' => Glossary::byCategory(),
+            'categories' => Glossary::CATEGORIES,
+        ], 'layouts/minimal'));
     }
 
     public function legal(Request $request): Response

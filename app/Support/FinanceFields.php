@@ -6,30 +6,31 @@ namespace App\Support;
 
 /**
  * Définition unique des champs du profil financier pour l'interface (libellés, unités, aides, bulles).
+ * « term » renvoie à une fiche du glossaire (App\Support\Glossary) ; « tip » reste réservé aux aides propres à un champ.
  * Utilisée par l'onboarding, les paramètres et les messages de complétude.
  */
 final class FinanceFields
 {
     /**
-     * @return array<string, array{label: string, unit: string, help: string, tip?: array{0: string, 1: string}}>
+     * @return array<string, array{label: string, unit: string, help: string, term?: string, note?: string, tip?: array{0: string, 1: string, 2?: string}}>
      */
     public static function amounts(): array
     {
         return [
-            'revenue' => ['label' => 'Chiffre d\'affaires HT', 'unit' => '€', 'help' => 'Sur la période de référence.'],
+            'revenue' => ['label' => 'Chiffre d\'affaires HT', 'unit' => '€', 'help' => 'Sur la période de référence.', 'term' => 'chiffre-affaires'],
             'fixed_costs' => ['label' => 'Charges fixes (hors personnel)', 'unit' => '€', 'help' => 'Loyer, logiciels, assurances, comptable…',
-                'tip' => ['Charges fixes', 'Dépenses qui ne varient pas avec l\'activité. N\'incluez pas les salaires : ils ont leur propre champ.']],
+                'term' => 'charges-fixes', 'note' => 'N\'incluez pas les salaires : ils ont leur propre champ.'],
             'personnel_costs' => ['label' => 'Coût des salariés (chargé)', 'unit' => '€', 'help' => 'Salaire brut + charges patronales. 0 si aucun salarié.',
-                'tip' => ['Coût employeur chargé', 'Ordre de grandeur en France : environ salaire brut × 1,45. Saisissez le coût total pour l\'agence, pas le net.']],
+                'term' => 'cout-employeur', 'note' => 'Saisissez le coût total pour l\'agence, pas le net.'],
             'variable_costs_attributable' => ['label' => 'Frais attribuables aux projets', 'unit' => '€', 'help' => 'Total de la période : sous-traitance, licences, thèmes…',
-                'tip' => ['Frais attribuables', 'Dépenses liées à un projet précis. Dans le simulateur de prix, elles se saisissent projet par projet.']],
+                'term' => 'frais-attribuables', 'note' => 'Ici, indiquez leur total sur la période ; dans le simulateur de prix, elles se saisissent projet par projet.'],
             'variable_costs_general' => ['label' => 'Charges variables générales', 'unit' => '€', 'help' => 'Frais bancaires, commissions de paiement…',
-                'tip' => ['Charges variables générales', 'Charges proportionnelles au chiffre d\'affaires mais non attribuables à un projet. Elles deviennent un pourcentage appliqué à chaque prix.']],
+                'term' => 'charges-variables-generales'],
             'owner_comp_total_cost' => ['label' => 'Rémunération du dirigeant (coût complet annuel)', 'unit' => '€', 'help' => 'Cotisations comprises. 0 si aucune.',
-                'tip' => ['Rémunération du dirigeant', 'Le coût complet sur un an, cotisations sociales comprises. Sans elle, le coût horaire et les prix recommandés seraient sous-estimés.']],
+                'term' => 'remuneration-dirigeant'],
             'owner_comp_included_amount' => ['label' => 'dont déjà inclus dans les charges ci-dessus', 'unit' => '€', 'help' => 'Pour éviter de la compter deux fois.',
-                'tip' => ['Part déjà incluse', 'Si le dirigeant est salarié et déjà compté dans le coût des salariés, indiquez ce montant : seule la différence sera ajoutée.']],
-            'revenue_target' => ['label' => 'Objectif de chiffre d\'affaires annuel', 'unit' => '€', 'help' => 'Pour l\'exercice visé.'],
+                'tip' => ['Part déjà incluse', 'Si vous êtes salarié de votre agence (président de SAS par exemple) et déjà compté dans le coût des salariés, indiquez ce montant : seule la différence sera ajoutée, pour ne pas compter votre rémunération deux fois.', 'coût complet 50 000 €, dont 40 000 € déjà dans « Coût des salariés » → seuls 10 000 € sont ajoutés.']],
+            'revenue_target' => ['label' => 'Objectif de chiffre d\'affaires annuel', 'unit' => '€', 'help' => 'Pour l\'exercice visé.', 'term' => 'objectif-ca'],
         ];
     }
 

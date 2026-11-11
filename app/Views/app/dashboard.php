@@ -48,7 +48,7 @@ $hourlyLabel = $hourly['assumptions'] === [] ? 'Calculé' : sprintf('Calculé, %
 <section class="kpi-grid" aria-label="Indicateurs principaux">
   <article class="card kpi<?php if ($result['value'] === null): ?> kpi--empty<?php endif; ?>">
     <div class="kpi__top">
-      <div class="card__title"><h2 class="kpi__label">Résultat estimé</h2><?= ui_tip('tip-result', 'Résultat estimé', 'Résultat estimé', 'CA annualisé moins toutes les charges déclarées. Estimation de gestion : elle ne remplace pas votre bilan.', array_merge(['Inclus :'], $result['includes'], ['Exclus :'], $result['excludes'])) ?></div>
+      <div class="card__title"><h2 class="kpi__label">Résultat estimé</h2><?= ui_term('resultat-estime', 'Estimation de gestion : elle ne remplace pas votre bilan.', 'start', array_merge(['Inclus :'], $result['includes'], ['Exclus :'], $result['excludes'])) ?></div>
       <?php if ($result['value'] !== null): ?><?= ui_nature('calculated') ?><?php endif; ?>
     </div>
     <?php if ($result['value'] !== null): ?>
@@ -64,7 +64,7 @@ $hourlyLabel = $hourly['assumptions'] === [] ? 'Calculé' : sprintf('Calculé, %
 
   <article class="card kpi<?php if ($latestDiag === null): ?> kpi--empty<?php endif; ?>">
     <div class="kpi__top">
-      <div class="card__title"><h2 class="kpi__label">Maturité business</h2><?= ui_tip('tip-maturity', 'Maturité business', 'Maturité business', 'Score sur 100 issu du dernier diagnostic terminé, moyenne des six dimensions à poids égaux. Autoévaluation indicative.') ?></div>
+      <div class="card__title"><h2 class="kpi__label">Maturité business</h2><?= ui_term('score-maturite', 'Calculé à partir de votre dernier diagnostic terminé. Autoévaluation indicative.') ?></div>
       <?php if ($latestDiag !== null): ?><?= ui_nature('frozen', 'Figé le ' . Format::date(substr((string) $latestDiag['completed_at'], 0, 10))) ?><?php endif; ?>
     </div>
     <?php if ($latestDiag === null): ?>
@@ -93,7 +93,7 @@ $hourlyLabel = $hourly['assumptions'] === [] ? 'Calculé' : sprintf('Calculé, %
 
   <article class="card kpi<?php if (!$hasOffers): ?> kpi--empty<?php endif; ?>">
     <div class="kpi__top">
-      <div class="card__title"><h2 class="kpi__label">MRR contractualisé</h2><?= ui_tip('tip-mrr', 'MRR contractualisé', 'MRR contractualisé', 'Revenu mensuel des contrats récurrents réellement signés. Les scénarios simulés ne sont jamais ajoutés à ce montant.') ?></div>
+      <div class="card__title"><h2 class="kpi__label">MRR contractualisé</h2><?= ui_term('mrr', 'Les scénarios simulés ne sont jamais ajoutés à ce montant.') ?></div>
       <?php if ($hasOffers): ?><?= ui_nature('calculated') ?><?php endif; ?>
     </div>
     <?php if ($hasOffers): ?>
@@ -118,7 +118,7 @@ $hourlyLabel = $hourly['assumptions'] === [] ? 'Calculé' : sprintf('Calculé, %
     <div class="target">
       <div class="stack stack--sm">
         <div class="cluster cluster--between">
-          <div class="card__title"><h2 id="t-target">Objectif de CA<?php if ($target['year'] !== null): ?> <?= e($target['year']) ?><?php endif; ?></h2><?= ui_tip('tip-target', 'Objectif de CA', 'Objectif de chiffre d\'affaires', 'Votre objectif déclaré, comparé au CA de la période de référence. L\'écart montre le chemin restant : ce n\'est pas une prévision.') ?></div>
+          <div class="card__title"><h2 id="t-target">Objectif de CA<?php if ($target['year'] !== null): ?> <?= e($target['year']) ?><?php endif; ?></h2><?= ui_term('objectif-ca') ?></div>
           <?= ui_nature('declared') ?>
         </div>
         <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="<?= attr($targetPct) ?>" aria-label="CA de référence par rapport à l'objectif : <?= attr($targetPct) ?> %"><span class="progress__bar" data-value="<?= attr($targetPct) ?>"></span></div>
@@ -137,7 +137,7 @@ $hourlyLabel = $hourly['assumptions'] === [] ? 'Calculé' : sprintf('Calculé, %
 <div class="dash-grid">
   <section class="card" aria-labelledby="t-prio">
     <div class="card__header">
-      <div class="card__title"><h2 id="t-prio">Priorités</h2><?= ui_tip('tip-prio', 'Priorités', 'D\'où viennent les priorités ?', 'Un moteur de règles analyse votre profil, votre dernier diagnostic, vos simulations finalisées et vos formules récurrentes. Chaque recommandation indique les données sur lesquelles elle repose.') ?></div>
+      <div class="card__title"><h2 id="t-prio">Priorités</h2><?= ui_tip('tip-prio', 'Priorités', 'D\'où viennent les priorités ?', 'Agency OS compare vos chiffres à des seuils simples (prix trop bas, peu de récurrent, objectif lointain…) et vous dit quoi traiter en premier. Chaque recommandation indique les données sur lesquelles elle repose.', [], 'start', 'votre prix de création de site est sous votre prix plancher : c\'est la priorité n° 1.', '/app/glossaire#priorite') ?></div>
       <a class="text-small" href="/app/strategie">Toutes les recommandations</a>
     </div>
     <?php if ($strategy['top'] === []): ?>
@@ -162,10 +162,10 @@ $hourlyLabel = $hourly['assumptions'] === [] ? 'Calculé' : sprintf('Calculé, %
   </section>
 
   <section class="card" aria-labelledby="t-marks">
-    <div class="card__header"><div class="card__title"><h2 id="t-marks">Repères de production</h2><?= ui_tip('tip-marks', 'Repères de production', 'Repères de production', 'Calculés à partir de votre profil financier. Ils alimentent le simulateur de prix et les formules récurrentes.', [], 'end') ?></div></div>
+    <div class="card__header"><div class="card__title"><h2 id="t-marks">Repères de production</h2><?= ui_tip('tip-marks', 'Repères de production', 'Repères de production', 'Les chiffres clés de votre temps de travail : combien coûte une heure et combien d\'heures vous pouvez vendre. Ils servent de base au simulateur de prix et aux formules récurrentes.', [], 'end', null, '/app/glossaire#rubrique-production') ?></div></div>
     <div class="result-list">
       <div class="result-line">
-        <span class="result-line__label">Coût horaire complet <?= ui_tip('tip-hourly', 'Coût horaire', 'Coût horaire complet', '(Charges fixes + coût des salariés + rémunération du dirigeant) ÷ heures facturables annuelles.') ?></span>
+        <span class="result-line__label">Coût horaire complet <?= ui_term('cout-horaire', formula: true) ?></span>
         <span class="result-line__value"><?= e(Format::money($hourly['value'])) ?>/h</span>
       </div>
       <?php if ($hourly['value'] !== null): ?>

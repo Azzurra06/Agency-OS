@@ -57,7 +57,7 @@ $delta = static function (?string $value): string {
   <div class="stack stack--sm">
     <div class="card__title">
       <h2 id="t-score"><?= e($partial ? 'Diagnostic partiel : ' . $results['scorable_count'] . '/6 dimensions' : 'Maturité : ' . $results['level']) ?></h2>
-      <?= ui_tip('tip-score', 'Score global', 'Comment ce score est calculé', 'Moyenne simple des six dimensions, à poids égaux. Chaque dimension = points obtenus ÷ points possibles sur les réponses exploitables. Le score global n\'est affiché que si les six dimensions sont calculables (au moins 3 réponses exploitables et 60 % des questions).', ['Fragile : 0 à 39', 'En construction : 40 à 59', 'Structuré : 60 à 79', 'Avancé : 80 à 100']) ?>
+      <?= ui_tip('tip-score', 'Score global', 'Comment ce score est calculé', 'La moyenne de vos six notes par dimension, chacune sur 100. Il ne s\'affiche que si chaque dimension a reçu assez de réponses (au moins 3, et 60 % de ses questions).', ['Fragile : 0 à 39', 'En construction : 40 à 59', 'Structuré : 60 à 79', 'Avancé : 80 à 100'], 'start', 'notes de 70, 55, 40, 80, 65 et 50 → score global de 60/100, « Structuré ».', '/app/glossaire#score-maturite') ?>
     </div>
     <?php if ($partial): ?><p class="text-secondary">Score global disponible lorsque les 6 dimensions sont renseignées.</p><?php endif; ?>
     <p class="text-small">
@@ -84,7 +84,7 @@ $delta = static function (?string $value): string {
 <div class="dash-grid">
   <section class="card" aria-labelledby="t-radar">
     <div class="card__header">
-      <div class="card__title"><h2 id="t-radar">Vue par dimension</h2><?= ui_tip('tip-radar', 'Radar', 'Lire le radar', 'Chaque axe est une dimension, de 0 (centre) à 100. Un axe grisé « insuffisant » n\'est pas calculable : il n\'est jamais placé à 0.') ?></div>
+      <div class="card__title"><h2 id="t-radar">Vue par dimension</h2><?= ui_tip('tip-radar', 'Radar', 'Lire le radar', 'Chaque branche est une dimension, notée de 0 (au centre) à 100 (au bord). Plus la forme est grande et régulière, plus l\'agence est structurée. Une branche grisée « insuffisant » manque de réponses : elle n\'est pas notée, et jamais placée à 0.', [], 'start', 'une pointe courte sur « Rentabilité » signale votre point le plus fragile.') ?></div>
       <?php if ($partial): ?><span class="badge badge--warning"><?= e($results['scorable_count']) ?>/6 dimensions</span><?php endif; ?>
     </div>
     <div class="chart-box chart-box--radar"><canvas id="chart-radar" role="img" aria-label="<?= attr('Radar : ' . $radarLabel . '.') ?>"></canvas></div>

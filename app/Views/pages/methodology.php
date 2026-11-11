@@ -4,7 +4,7 @@
 <article class="stack stack--lg">
   <header class="stack stack--sm">
     <h1>Méthodologie</h1>
-    <p class="text-secondary">Comment Agency OS calcule vos indicateurs, votre score de maturité et ses recommandations. Tous les calculs sont faits par le serveur, en décimal exact (sans arrondi intermédiaire), et arrondis une seule fois à l'affichage.</p>
+    <p class="text-secondary">Comment Agency OS calcule vos indicateurs, votre score de maturité et ses recommandations. Tous les calculs sont faits par le serveur, en décimal exact (sans arrondi intermédiaire), et arrondis une seule fois à l'affichage. Un terme vous échappe ? Consultez le <a href="/glossaire">glossaire</a>.</p>
     <nav class="chips" aria-label="Sommaire">
       <a class="chip" href="#profil">Profil financier</a><a class="chip" href="#cout-horaire">Coût horaire</a><a class="chip" href="#pricing">Pricing</a>
       <a class="chip" href="#recurrent">Revenus récurrents</a><a class="chip" href="#diagnostic">Diagnostic</a><a class="chip" href="#recommandations">Recommandations</a><a class="chip" href="#natures">Natures des données</a>

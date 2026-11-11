@@ -21,7 +21,7 @@ $statusLabel = static fn (array $s): string => match ($s['status']) {
 ?>
 <header class="page-header">
   <div class="page-header__titles">
-    <div class="card__title"><h1>Pricing</h1><?= ui_tip('tip-pricing', 'Pricing', 'Simulateur de prix', 'Calculez le prix plancher et le prix recommandé d\'une prestation à partir de votre coût horaire, du temps estimé, des frais directs et de votre marge cible. Un brouillon n\'a aucun effet sur la stratégie : seule la simulation finalisée sert de référence pour sa prestation.') ?></div>
+    <div class="card__title"><h1>Pricing</h1><?= ui_tip('tip-pricing', 'Pricing', 'Simulateur de prix', 'Trouvez le bon prix d\'une prestation : le minimum pour ne pas perdre d\'argent (prix plancher) et le prix qui vous laisse la marge visée (prix recommandé), à partir de votre coût horaire, du temps estimé et des frais du projet. Un brouillon est sans conséquence : seule la simulation finalisée sert de référence.', [], 'start', '40 h à 60 €/h + 300 € de frais, marge visée 30 % → plancher 2 755 €, recommandé 3 971 €.', '/app/glossaire#prix-recommande') ?></div>
     <p class="page-header__sub">Vérifiez que vos prix couvrent vos coûts et votre marge cible.</p>
   </div>
 </header>

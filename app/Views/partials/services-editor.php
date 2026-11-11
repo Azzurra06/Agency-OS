@@ -4,7 +4,7 @@
 $categories = ['showcase' => 'Site vitrine', 'ecommerce' => 'Site e-commerce', 'redesign' => 'Refonte', 'seo' => 'SEO', 'custom' => 'Sur mesure', 'other' => 'Autre'];
 ?>
 <section class="card stack" aria-labelledby="t-services">
-  <div class="card__title"><h2 id="t-services">Prestations ponctuelles</h2><?= ui_tip('tip-services', 'Prestations', 'Catalogue des prestations', 'Le prix pratiqué est la référence du « prix actuel » comparé au prix recommandé du simulateur. Le volume annuel permet de chiffrer un manque à gagner. La maintenance se gère dans le module Revenus récurrents.') ?></div>
+  <div class="card__title"><h2 id="t-services">Prestations ponctuelles</h2><?= ui_tip('tip-services', 'Prestations', 'Catalogue des prestations', 'La liste de ce que vous vendez au projet, avec votre prix actuel et le nombre de ventes par an. Agency OS compare ce prix au prix recommandé du simulateur et chiffre ce que vous laissez éventuellement sur la table. La maintenance se gère dans Revenus récurrents.', [], 'start', '« Site vitrine », vendu 3 200 €, 8 fois par an.', '/app/glossaire#manque-a-gagner') ?></div>
   <?php if ($isDemo): ?><p class="text-small text-secondary">Prestations fictives de l'agence « Lumen ».</p><?php endif; ?>
 
   <?php if ($services === []): ?>

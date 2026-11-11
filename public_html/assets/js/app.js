@@ -941,6 +941,26 @@ document.addEventListener('keydown', (event) => {
   if (open) closeTip(open, true);
 });
 
+/* ---------- Glossaire : filtre de recherche ---------- */
+const glossaryFilter = document.querySelector('[data-glossary-filter]');
+if (glossaryFilter) {
+  const normalize = (text) => text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const items = [...document.querySelectorAll('[data-glossary-item]')].map((el) => ({ el, text: normalize(el.dataset.search || '') }));
+  const groups = [...document.querySelectorAll('[data-glossary-group]')];
+  const empty = document.querySelector('[data-glossary-empty]');
+  glossaryFilter.addEventListener('input', () => {
+    const query = normalize(glossaryFilter.value.trim());
+    let visible = 0;
+    items.forEach(({ el, text }) => {
+      const match = query === '' || text.includes(query);
+      el.hidden = !match;
+      if (match) visible += 1;
+    });
+    groups.forEach((group) => { group.hidden = group.querySelector('[data-glossary-item]:not([hidden])') === null; });
+    if (empty) empty.hidden = visible > 0;
+  });
+}
+
 /* ---------- Compte à rebours de la démo (affichage uniquement) ---------- */
 const countdown = document.querySelector('[data-expires]');
 if (countdown) {

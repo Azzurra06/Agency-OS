@@ -15,7 +15,7 @@ $statusLabel = static fn (array $s): string => match ($s['status']) {
 ?>
 <header class="page-header">
   <div class="page-header__titles">
-    <div class="card__title"><h1>Revenus récurrents</h1><?= ui_tip('tip-rec', 'Revenus récurrents', 'Réel et prévisionnel', 'La zone « Réel » ne compte que les contrats réellement signés. La zone « Prévisionnel » contient des scénarios simulés : leurs montants ne sont jamais ajoutés au réel.') ?></div>
+    <div class="card__title"><h1>Revenus récurrents</h1><?= ui_term('revenus-recurrents', 'Ici, la zone « Réel » ne compte que les contrats signés ; la zone « Prévisionnel » contient des simulations, jamais ajoutées au réel.') ?></div>
     <p class="page-header__sub">Vos contrats de maintenance, d'hébergement ou de SEO, et leur potentiel.</p>
   </div>
   <a class="btn btn--secondary" href="/app/recurrent/formules/nouvelle"><?= ui_icon('plus', 'sm') ?>Nouvelle formule</a>
@@ -33,12 +33,12 @@ $statusLabel = static fn (array $s): string => match ($s['status']) {
   </div>
   <div class="kpi-grid">
     <article class="card kpi">
-      <div class="kpi__top"><div class="card__title"><h3 class="kpi__label">MRR contractualisé</h3><?= ui_tip('tip-mrr', 'MRR contractualisé', 'MRR contractualisé', 'Somme des prix mensuels normalisés × contrats signés. Une formule annuelle compte pour son prix ÷ 12. C\'est un indicateur normalisé, pas un encaissement.') ?></div></div>
+      <div class="kpi__top"><div class="card__title"><h3 class="kpi__label">MRR contractualisé</h3><?= ui_term('mrr', 'C\'est un indicateur de suivi, pas un encaissement.') ?></div></div>
       <p class="kpi__value"><?= e(Format::number($summary['mrr'], 0)) ?><span class="kpi__unit">€ / mois</span></p>
       <div class="kpi__meta"><span>ARR <span class="num"><?= e(Format::money($summary['arr'], 0)) ?></span></span></div>
     </article>
     <article class="card kpi">
-      <div class="kpi__top"><div class="card__title"><h3 class="kpi__label">Couverture du CA</h3><?= ui_tip('tip-cov', 'Couverture', 'Couverture du chiffre d\'affaires', 'ARR contractualisé ÷ CA annualisé du profil. Elle est affichée à côté de la part récurrente que vous avez déclarée et ne la remplace jamais automatiquement.') ?></div></div>
+      <div class="kpi__top"><div class="card__title"><h3 class="kpi__label">Couverture du CA</h3><?= ui_term('couverture-ca', 'Elle est affichée à côté de la part récurrente que vous avez déclarée, sans la remplacer.') ?></div></div>
       <?php if ($summary['coverage_pct'] === null): ?>
         <p class="kpi__value">Non calculable</p>
         <div class="kpi__meta"><span>Renseignez le chiffre d'affaires de la période.</span><a href="/app/parametres/finances">Compléter</a></div>
@@ -48,7 +48,7 @@ $statusLabel = static fn (array $s): string => match ($s['status']) {
       <?php endif; ?>
     </article>
     <article class="card kpi">
-      <div class="kpi__top"><div class="card__title"><h3 class="kpi__label">Capacité utilisée</h3><?= ui_tip('tip-capa', 'Capacité', 'Capacité utilisée par les contrats', 'Heures mensuelles nécessaires aux contrats signés ÷ capacité mensuelle de production (heures facturables ÷ 12).') ?></div></div>
+      <div class="kpi__top"><div class="card__title"><h3 class="kpi__label">Capacité utilisée</h3><?= ui_term('capacite-utilisee') ?></div></div>
       <p class="kpi__value"><?= e($summary['capacity_use_pct'] === null ? '—' : Format::percent($summary['capacity_use_pct'])) ?></p>
       <div class="kpi__meta"><span><span class="num"><?= e(Format::hours($summary['hours_needed'], 1)) ?></span> par mois<?= e($summary['monthly_capacity'] === null ? '' : ' sur ' . Format::hours($summary['monthly_capacity'], 1)) ?></span></div>
     </article>

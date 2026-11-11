@@ -12,7 +12,7 @@ $amountField = static function (string $name) use ($amounts, $v): void {
     $f = $amounts[$name];
     ?>
     <div class="field">
-      <div class="field__label"><label for="f-<?= attr($name) ?>"><?= e($f['label']) ?></label><?php if (isset($f['tip'])): ?><?= ui_tip('tip-' . str_replace('_', '-', $name), $f['label'], $f['tip'][0], $f['tip'][1]) ?><?php endif; ?></div>
+      <div class="field__label"><label for="f-<?= attr($name) ?>"><?= e($f['label']) ?></label><?php if (isset($f['term'])): ?><?= ui_term($f['term'], $f['note'] ?? null) ?><?php elseif (isset($f['tip'])): ?><?= ui_tip('tip-' . str_replace('_', '-', $name), $f['label'], $f['tip'][0], $f['tip'][1], [], 'start', $f['tip'][2] ?? null) ?><?php endif; ?></div>
       <div class="input-affix"><input class="input num" id="f-<?= attr($name) ?>" name="<?= attr($name) ?>" data-type="decimal" inputmode="decimal" value="<?= attr($v($name)) ?>" aria-describedby="h-<?= attr($name) ?> err-<?= attr($name) ?>"><span class="input-affix__unit"><?= e($f['unit']) ?></span></div>
       <p class="field__help" id="h-<?= attr($name) ?>"><?= e($f['help']) ?></p>
       <p class="field__error" id="err-<?= attr($name) ?>" data-error-for="<?= attr($name) ?>"></p>
@@ -27,7 +27,7 @@ $amountField = static function (string $name) use ($amounts, $v): void {
   <?php endif; ?>
 
   <section class="form-section" aria-labelledby="s-period">
-    <div class="form-section__head"><h2 id="s-period">Période de référence</h2><?= ui_tip('tip-period', 'Période de référence', 'Période de référence', 'Par défaut, le dernier exercice clos. Si la période ne dure pas 12 mois, les montants sont annualisés pour les calculs.') ?></div>
+    <div class="form-section__head"><h2 id="s-period">Période de référence</h2><?= ui_term('periode-reference', 'Si elle ne dure pas 12 mois, les montants sont ramenés à un an pour les calculs.') ?></div>
     <div class="form-grid form-grid--3">
       <div class="field">
         <label class="field__label" for="f-period_type">Type</label>
@@ -64,10 +64,10 @@ $amountField = static function (string $name) use ($amounts, $v): void {
   </section>
 
   <section class="form-section" aria-labelledby="s-production">
-    <div class="form-section__head"><h2 id="s-production">Capacité de production</h2><?= ui_tip('tip-production', 'Capacité de production', 'Heures facturables', 'ETP de production × heures annuelles × taux de facturabilité. Elles servent à calculer votre coût horaire complet.') ?></div>
+    <div class="form-section__head"><h2 id="s-production">Capacité de production</h2><?= ui_term('heures-facturables', 'Elles servent à calculer votre coût horaire complet.', formula: true) ?></div>
     <div class="form-grid form-grid--3">
       <div class="field">
-        <label class="field__label" for="f-production_fte">ETP de production</label>
+        <div class="field__label"><label for="f-production_fte">ETP de production</label><?= ui_term('etp', 'Ne comptez que les personnes qui produisent pour les clients.') ?></div>
         <input class="input num" id="f-production_fte" name="production_fte" data-type="decimal" inputmode="decimal" value="<?= attr($v('production_fte')) ?>">
         <p class="field__help">Personnes qui produisent des heures facturables, dirigeant compris s'il produit.</p>
         <p class="field__error" data-error-for="production_fte"></p>
@@ -79,7 +79,7 @@ $amountField = static function (string $name) use ($amounts, $v): void {
         <p class="field__error" data-error-for="annual_hours_per_fte"></p>
       </div>
       <div class="field">
-        <label class="field__label" for="f-billable_rate">Taux de facturabilité</label>
+        <div class="field__label"><label for="f-billable_rate">Taux de facturabilité</label><?= ui_term('taux-facturabilite', 'Sans donnée précise, 65 % est une hypothèse prudente.') ?></div>
         <div class="input-affix"><input class="input num" id="f-billable_rate" name="billable_rate" data-type="decimal" inputmode="decimal" value="<?= attr($v('billable_rate')) ?>" placeholder="65"><span class="input-affix__unit">%</span></div>
         <label class="check"><input type="checkbox" name="billable_rate_is_assumption" data-type="bool"<?php if (($values['billable_rate_is_assumption'] ?? false) === true): ?> checked<?php endif; ?>>Valeur supposée (hypothèse)</label>
         <p class="field__error" data-error-for="billable_rate"></p>
@@ -106,7 +106,7 @@ $amountField = static function (string $name) use ($amounts, $v): void {
         <p class="field__error" data-error-for="revenue_target_year"></p>
       </div>
       <div class="field">
-        <div class="field__label"><label for="f-recurring_share_declared">Part récurrente du CA (estimation)</label><?= ui_tip('tip-recurring-share', 'Part récurrente', 'Part récurrente déclarée', 'Votre estimation de la part du CA issue de contrats récurrents (maintenance, abonnements). Elle reste la référence : la couverture calculée à partir des contrats saisis est affichée à côté, sans la remplacer.') ?></div>
+        <div class="field__label"><label for="f-recurring_share_declared">Part récurrente du CA (estimation)</label><?= ui_term('part-recurrente', 'Elle reste la référence : la couverture calculée est affichée à côté, sans la remplacer.') ?></div>
         <div class="input-affix"><input class="input num" id="f-recurring_share_declared" name="recurring_share_declared" data-type="decimal" inputmode="decimal" value="<?= attr($v('recurring_share_declared')) ?>"><span class="input-affix__unit">%</span></div>
         <p class="field__error" data-error-for="recurring_share_declared"></p>
       </div>

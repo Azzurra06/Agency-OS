@@ -18,7 +18,7 @@ $query = static fn (string $tab, ?string $mod): string => '/app/strategie?onglet
 ?>
 <header class="page-header">
   <div class="page-header__titles">
-    <div class="card__title"><h1>Stratégie</h1><?= ui_tip('tip-strat', 'Stratégie', 'D\'où viennent ces recommandations ?', 'Un moteur de règles déterministe analyse votre profil, vos prix figés, vos formules récurrentes et votre dernier diagnostic. Chaque recommandation indique ses sources, les valeurs qui l\'ont déclenchée et les seuils appliqués. Les brouillons n\'en déclenchent jamais.') ?></div>
+    <div class="card__title"><h1>Stratégie</h1><?= ui_tip('tip-strat', 'Stratégie', 'D\'où viennent ces recommandations ?', 'Agency OS applique des règles fixes et transparentes (pas d\'intelligence artificielle) à vos chiffres : profil, prix finalisés, formules récurrentes, dernier diagnostic. Chaque recommandation indique les données utilisées, les valeurs qui l\'ont déclenchée et le seuil appliqué. Les brouillons ne comptent jamais.', [], 'start', 'part récurrente de 8 %, sous le seuil de 20 % → « Développer la maintenance ».', '/app/glossaire#priorite') ?></div>
     <p class="page-header__sub">Recommandations priorisées et plan d'action.</p>
   </div>
   <div class="cluster">

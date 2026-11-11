@@ -63,6 +63,7 @@ $remainingLabel = $demoRemaining === null ? '' : sprintf('%d h %02d', intdiv($de
         <?php endforeach; ?>
       </nav>
       <div class="sidebar__bottom">
+        <a class="nav__link" href="/app/glossaire"<?php if ($nav === 'glossaire'): ?> aria-current="page"<?php endif; ?>><?= ui_icon('circle-help') ?><span class="nav__label">Glossaire</span></a>
         <a class="nav__link" href="/app/parametres/agence"<?php if ($nav === 'parametres'): ?> aria-current="page"<?php endif; ?>><?= ui_icon('settings') ?><span class="nav__label">Paramètres</span></a>
         <?php if (!$isDemo): ?>
         <form method="post" action="/deconnexion"><?= ui_csrf($csrf) ?>
