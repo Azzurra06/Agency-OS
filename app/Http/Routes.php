@@ -10,11 +10,13 @@ use App\Http\Controllers\Api\FinancialProfileApiController;
 use App\Http\Controllers\Api\HealthController;
 use App\Http\Controllers\Api\OrganizationApiController;
 use App\Http\Controllers\Api\PricingApiController;
+use App\Http\Controllers\Api\RecurringApiController;
 use App\Http\Controllers\Api\ServicesApiController;
 use App\Http\Controllers\Pages\AppPagesController;
 use App\Http\Controllers\Pages\AuthPagesController;
 use App\Http\Controllers\Pages\DiagnosticPagesController;
 use App\Http\Controllers\Pages\PricingPagesController;
+use App\Http\Controllers\Pages\RecurringPagesController;
 use App\Http\Controllers\Pages\DemoPagesController;
 use App\Http\Controllers\Pages\PublicPagesController;
 
@@ -38,6 +40,8 @@ final class Routes
         $diagnosticPages = new DiagnosticPagesController($app);
         $pricing = new PricingApiController($app);
         $pricingPages = new PricingPagesController($app);
+        $recurring = new RecurringApiController($app);
+        $recurringPages = new RecurringPagesController($app);
         $p = Route::ACCESS_PUBLIC;
 
         // Public
@@ -71,7 +75,11 @@ final class Routes
         $r->add('GET', '/app/diagnostic/resultats/{id}', $diagnosticPages->results(...), 'app.read');
         $r->add('GET', '/app/pricing', $pricingPages->index(...), 'app.read');
         $r->add('GET', '/app/pricing/{id}', $pricingPages->show(...), 'app.read');
-        foreach (['recurrent', 'strategie'] as $module) {
+        $r->add('GET', '/app/recurrent', $recurringPages->index(...), 'app.read');
+        $r->add('GET', '/app/recurrent/formules/nouvelle', $recurringPages->newOffer(...), 'app.read');
+        $r->add('GET', '/app/recurrent/formules/{id}', $recurringPages->offer(...), 'app.read');
+        $r->add('GET', '/app/recurrent/scenarios/{id}', $recurringPages->scenario(...), 'app.read');
+        foreach (['strategie'] as $module) {
             $r->add('GET', '/app/' . $module, $pages->module(...), 'app.read');
         }
 
@@ -107,6 +115,24 @@ final class Routes
         $r->add('POST', '/api/v1/pricing/simulations/{id}/archive', $pricing->archive(...), 'pricing.write');
         $r->add('PUT', '/api/v1/pricing/scenarios/{id}', $pricing->saveScenario(...), 'pricing.write');
         $r->add('DELETE', '/api/v1/pricing/scenarios/{id}', $pricing->deleteScenario(...), 'pricing.write');
+        $r->add('POST', '/api/v1/recurring/calculate', $recurring->calculate(...), 'app.read');
+        $r->add('GET', '/api/v1/recurring/summary', $recurring->summary(...), 'app.read');
+        $r->add('GET', '/api/v1/recurring/offers', $recurring->offers(...), 'app.read');
+        $r->add('POST', '/api/v1/recurring/offers', $recurring->storeOffer(...), 'recurring.write');
+        $r->add('GET', '/api/v1/recurring/offers/{id}', $recurring->showOffer(...), 'app.read');
+        $r->add('PATCH', '/api/v1/recurring/offers/{id}', $recurring->updateOffer(...), 'recurring.write');
+        $r->add('PATCH', '/api/v1/recurring/offers/{id}/contracts', $recurring->contracts(...), 'recurring.write');
+        $r->add('DELETE', '/api/v1/recurring/offers/{id}', $recurring->destroyOffer(...), 'recurring.write');
+        $r->add('GET', '/api/v1/recurring/scenarios', $recurring->scenarios(...), 'app.read');
+        $r->add('POST', '/api/v1/recurring/scenarios', $recurring->storeScenario(...), 'recurring.write');
+        $r->add('GET', '/api/v1/recurring/scenarios/{id}', $recurring->showScenario(...), 'app.read');
+        $r->add('GET', '/api/v1/recurring/scenarios/{id}/projection', $recurring->projection(...), 'app.read');
+        $r->add('PUT', '/api/v1/recurring/scenarios/{id}', $recurring->updateScenario(...), 'recurring.write');
+        $r->add('DELETE', '/api/v1/recurring/scenarios/{id}', $recurring->destroyScenario(...), 'recurring.write');
+        $r->add('POST', '/api/v1/recurring/scenarios/{id}/finalize', $recurring->finalize(...), 'recurring.write');
+        $r->add('POST', '/api/v1/recurring/scenarios/{id}/new-version', $recurring->newVersion(...), 'recurring.write');
+        $r->add('POST', '/api/v1/recurring/scenarios/{id}/archive', $recurring->archive(...), 'recurring.write');
+        $r->add('POST', '/api/v1/financial-profile/recurring-share/accept-computed', $recurring->acceptComputedShare(...), 'finance.write');
 
         return $r;
     }

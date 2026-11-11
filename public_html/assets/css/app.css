@@ -131,6 +131,32 @@ dialog.dialog::backdrop { background: rgba(23, 23, 28, 0.35); }
 .mobile-summary .text-right { text-align: right; }
 .page--with-summary-inner { display: flex; flex-direction: column; gap: inherit; }
 
+/* ---------- Revenus récurrents (lot 4) ---------- */
+.zone { display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-5); border-radius: var(--radius-lg); }
+.zone--real { border: 1px solid var(--color-border); background: var(--color-surface); }
+.zone--forecast { border: 2px dashed var(--color-border-strong); background: var(--color-surface-sunken); }
+.zone__head { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+.zone__head h2 { margin: 0; }
+.zone__action { margin-left: auto; }
+.zone .kpi-grid { margin: 0; }
+.kpi--simulated { border-style: dashed; }
+.stacked-bar { display: flex; height: 14px; border-radius: var(--radius-full); overflow: hidden; background: var(--color-surface-muted); }
+.stacked-bar__seg { display: block; height: 100%; }
+.stacked-bar__seg--0 { background: var(--color-accent); }
+.stacked-bar__seg--1 { background: #0EA5E9; }
+.stacked-bar__seg--2 { background: #14B8A6; }
+.stacked-bar__seg--3 { background: #F59E0B; }
+.legend { list-style: none; margin: var(--space-3) 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-5); font-size: var(--text-small); color: var(--color-text-secondary); }
+.legend li { display: inline-flex; align-items: center; gap: var(--space-2); }
+.legend__dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+.contracts-edit { display: flex; align-items: center; gap: var(--space-1); }
+.contracts-edit .input { width: 80px; min-height: 34px; }
+.text-danger { color: var(--color-danger); }
+.entries-table .input { min-width: 90px; text-align: right; }
+.entries-table th[scope="row"] { font-weight: 500; background: transparent; }
+.projection-table td { text-align: right; }
+.projection-table th:not(:first-child) { text-align: right; }
+
 @media (max-width: 1023px) {
   .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .kpi-grid > :last-child { grid-column: 1 / -1; }

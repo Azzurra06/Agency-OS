@@ -402,7 +402,7 @@ final class PricingService
      * @param ScenarioData $data
      * @param list<LineData> $lines
      * @param array{price: string|null, volume: int|null} $service
-     * @param array{hourly_cost: DerivedValue, variable_rate: DerivedValue, period: string|null} $inputs
+     * @param array{hourly_cost: DerivedValue, variable_rate: DerivedValue, period: string|null, annualized_revenue: DerivedValue, monthly_capacity: DerivedValue, declared_share: Decimal|null} $inputs
      * @return array<string, mixed>
      */
     private function compute(array $data, array $lines, array $service, array $inputs): array
@@ -468,7 +468,7 @@ final class PricingService
 
     /**
      * @param array<string, mixed> $frozen
-     * @param array{hourly_cost: DerivedValue, variable_rate: DerivedValue, period: string|null} $inputs
+     * @param array{hourly_cost: DerivedValue, variable_rate: DerivedValue, period: string|null, annualized_revenue: DerivedValue, monthly_capacity: DerivedValue, declared_share: Decimal|null} $inputs
      * @return array{hourly_cost: bool, variable_rate: bool}
      */
     private function drift(array $frozen, array $inputs): array

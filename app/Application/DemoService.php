@@ -48,6 +48,7 @@ final class DemoService
         private readonly ServiceRepository $services,
         private readonly DiagnosticService $diagnostics,
         private readonly PricingService $pricing,
+        private readonly RecurringService $recurring,
         private readonly RateLimiter $limiter,
         private readonly SecurityEventLogger $events,
         private readonly SessionManager $sessions,
@@ -113,7 +114,7 @@ final class DemoService
     public function reset(OrgId $org, int $userId): void
     {
         $this->db->transaction(function () use ($org): void {
-            foreach (['pricing_simulations', 'diagnostics', 'financial_profile_changes', 'financial_profiles', 'services'] as $table) {
+            foreach (['recurring_scenarios', 'recurring_offers', 'pricing_simulations', 'diagnostics', 'financial_profile_changes', 'financial_profiles', 'services'] as $table) {
                 $this->db->run("DELETE FROM {$table} WHERE organization_id = :org", ['org' => $org->value]);
             }
             $this->db->run(
@@ -190,6 +191,7 @@ final class DemoService
         }
 
         $this->seedPricing($org, $userId);
+        $this->seedRecurring($org, $userId);
 
         $draft = $this->diagnostics->startOrResume($org, $userId);
         foreach (self::LUMEN_DIAGNOSTIC as $question => $option) {
@@ -232,6 +234,38 @@ final class DemoService
             'label' => 'Scénario A', 'hourly_cost_mode' => 'profile', 'contingency_pct' => '10.00', 'target_margin_pct' => '30.00',
             'lines' => $lines([['Audit de l\'existant', '6.00'], ['Maquettes', '10.00'], ['Intégration et reprise des contenus', '30.00'], ['Redirections et recette', '6.00']], []),
         ]);
+    }
+
+    /**
+     * Récurrent fictif : trois formules (dont une annuelle déficitaire, cas REC-2), un scénario figé et un brouillon.
+     */
+    private function seedRecurring(OrgId $org, int $userId): void
+    {
+        $essential = $this->recurring->createOffer($org, [
+            'name' => 'Maintenance essentielle', 'kind' => 'maintenance', 'billing_period' => 'monthly', 'price' => '150.00',
+            'hours_per_month' => '1.50', 'external_costs_per_month' => '10.00', 'active_contracts' => '12',
+            'items' => ['Mises à jour WordPress et extensions', 'Sauvegardes quotidiennes', 'Une heure de support par mois'],
+        ]);
+        $annual = $this->recurring->createOffer($org, [
+            'name' => 'Maintenance annuelle', 'kind' => 'maintenance', 'billing_period' => 'annual', 'price' => '1200.00',
+            'hours_per_month' => '1.50', 'external_costs_per_month' => '10.00', 'active_contracts' => '5',
+            'items' => ['Mises à jour WordPress et extensions', 'Sauvegardes quotidiennes'],
+        ]);
+        $hosting = $this->recurring->createOffer($org, [
+            'name' => 'Hébergement géré', 'kind' => 'hosting', 'billing_period' => 'monthly', 'price' => '40.00',
+            'hours_per_month' => '0.25', 'external_costs_per_month' => '8.00', 'active_contracts' => '9',
+            'items' => ['Hébergement et certificat', 'Surveillance de disponibilité'],
+        ]);
+        $entries = static fn (array $values): array => [
+            ['offer' => $essential, 'starting_clients' => '12.00', 'new_clients_per_month' => $values[0], 'monthly_churn_pct' => '3.00'],
+            ['offer' => $annual, 'starting_clients' => '5.00', 'new_clients_per_month' => $values[1], 'monthly_churn_pct' => '2.00'],
+            ['offer' => $hosting, 'starting_clients' => '9.00', 'new_clients_per_month' => $values[2], 'monthly_churn_pct' => '2.00'],
+        ];
+        $growth = $this->recurring->createScenario($org, ['name' => 'Croissance maintenance', 'horizon' => '12']);
+        $this->recurring->updateScenario($org, $growth, ['name' => 'Croissance maintenance', 'horizon' => '12', 'entries' => $entries(['2.00', '0.50', '1.00'])]);
+        $this->recurring->finalizeScenario($org, $growth, $userId);
+        $careful = $this->recurring->createScenario($org, ['name' => 'Hypothèse prudente', 'horizon' => '6']);
+        $this->recurring->updateScenario($org, $careful, ['name' => 'Hypothèse prudente', 'horizon' => '6', 'entries' => $entries(['1.00', '0.00', '0.50'])]);
     }
 
     /**

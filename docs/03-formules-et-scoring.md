@@ -264,7 +264,7 @@ Projection (scénario), pour chaque formule et chaque mois t = 1…horizon :
 |---|---|---|
 | 1 | 11,70 | 1 755,00 € |
 | 2 | 13,35 | 2 002,35 € |
-| 6 | 19,47 | 2 919,74 € |
+| 6 | 19,46 (19,4649…) | 2 919,74 € |
 | 12 | 27,35 | 4 102,34 € |
 
 Cumul sur 6 mois : **14 095,14 €**. Cumul sur 12 mois : **35 857,68 €**.

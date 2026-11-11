@@ -54,8 +54,8 @@
 | Phase 4, lot 0 | Socle : bootstrap et configuration, profils `portfolio`/`production`, PDO, migrations, `Decimal`, middlewares de sécurité (en-têtes, session, CSRF, authentification, contexte d'organisation, limitation des tentatives), dépôts restreints à l'organisation, `FieldCrypto`, journalisation, `Mailer` en capture, exécuteur cron, CI | code et tests (§5) | ✅ validé |
 | Phase 4, lot 1 | Démo (création, quotas, expiration, purge), authentification complète (comptes de test), layout, vue d'ensemble, profil et onboarding | code et tests (§6) | ✅ validé |
 | Phase 4, lot 2 | Diagnostic (questionnaire v1, scoring, résultats partiels) | code et tests (§7) | ✅ validé |
-| **Phase 4, lot 3** | Pricing (simulateur, aperçus, finalisation, versions) | code et tests (§8) | ⏳ livré, à valider |
-| Phase 4, lot 4 | Revenus récurrents (offres, contrats, scénarios, projections) | — | — |
+| Phase 4, lot 3 | Pricing (simulateur, aperçus, finalisation, versions) | code et tests (§8) | ✅ validé |
+| **Phase 4, lot 4** | Revenus récurrents (offres, contrats, scénarios, projections) | code et tests (§9) | ⏳ livré, à valider |
 | Phase 4, lot 5 | Stratégie (moteur de règles, sources des recommandations, plan d'action) | — | — |
 | Phase 4, lot 6 | Dashboard complet, historique, méthodologie, RGPD (export et suppression, utiles aux comptes de test), pages légales du portfolio | — | — |
 | Phase 5 | Tests de sécurité (locaux) ; déploiement **portfolio** sur Hostinger, avec ton accord pour chaque action ; checklist de mise en ligne du portfolio | runbooks et checklist | — |
@@ -134,4 +134,21 @@
 Une prestation supprimée laisse ses simulations figées lisibles (le contexte figé garde son nom, son prix et son volume). La réévaluation des recommandations après finalisation sera branchée au lot 5 (Stratégie).
 
 **Total : 182 tests, 2 013 assertions**, PHPStan niveau max sans erreur, aucun motif interdit.
+
+## 9. Lot 4 : ce qui a été livré (11/11/2026)
+
+| Exigence | Mise en œuvre | Vérification |
+|---|---|---|
+| Formules | `RecurringCalculator` (BCMath) : prix mensuel normalisé (annuel ÷ 12), coût mensuel par contrat (temps × coût horaire complet + coûts externes + tv × prix), résultat, marge sur prix de vente, prix plancher mensuel | cas REC-1 et REC-2 (formule annuelle déficitaire signalée) |
+| Réel : contrats signés | Migration `0006_recurring` ; formules avec prestations incluses ; nombre de contrats signés modifiable sur place (« mis à jour le … ») ; MRR et ARR contractualisés, répartition par formule, couverture du CA **à côté** de la part déclarée, écart > 10 points signalé, capacité utilisée ; remplacement de la part déclarée **uniquement sur action explicite** (journalisé `accept_computed_share`) | cas REC-3 et REC-5 ; test de la mise à jour explicite |
+| Prévisionnel : scénarios | Paramètres par formule (clients au départ = contrats signés par défaut, nouveaux par mois, résiliations), horizon 6 ou 12 mois, aperçu serveur pendant la saisie (anti-rebond, réponse périmée ignorée), courbe **en pointillés**, tableau mensuel, capacité et alerte de dépassement | cas REC-4 au centime (cumuls 6 et 12 mois) |
+| Séparation stricte | Deux zones visuellement distinctes (« Réel » / « Prévisionnel », badge Simulé, bordure pointillée) ; le MRR réel n'est affiché dans un scénario qu'à titre de repère, **jamais additionné** | test : le MRR réel ignore les scénarios |
+| Cycle de vie | Brouillon recalculé en direct ; finalisation : prix, temps, coût horaire, tv, capacité et séries mensuelles **figés et chiffrés (D4)** ; « Dupliquer pour modifier » (version + 1), la version finalisée précédente passe en `superseded` ; archivage ; 409 sur une version figée ; une formule modifiée ou supprimée ne change jamais un scénario figé | tests (chiffrement `k1.gcm:`, 409, versions, formule supprimée) |
+| Isolation | Dépôt restreint à l'organisation, clés étrangères composites ; 404 identique à « inexistant » et journalisation ; une formule d'une autre agence est refusée dans un scénario | test d'isolation |
+| Interface | Synthèse, fiche formule avec économie du contrat en direct, scénario ; bulles d'information ; carte « MRR contractualisé » sur la vue d'ensemble | parcours navigateur desktop et mobile, sans erreur ni défilement horizontal |
+| Démo | Lumen : trois formules (dont « Maintenance annuelle » déficitaire), MRR 2 660 €, un scénario figé « Croissance maintenance » et un brouillon « Hypothèse prudente » | test dédié |
+
+**Correction de la documentation.** Le tableau du cas REC-4 (03 §5) indiquait 19,47 clients au mois 6 ; la valeur exacte est 19,4649…, soit **19,46** (le MRR de 2 919,74 € était déjà juste). Le document est corrigé.
+
+**Total : 192 tests, 2 211 assertions**, PHPStan niveau max sans erreur, aucun motif interdit.
 

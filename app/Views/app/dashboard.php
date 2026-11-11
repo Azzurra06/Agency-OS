@@ -2,6 +2,8 @@
 /** @var array<string, mixed> $derived */
 /** @var list<array{name: string, current_price: string|null}> $services */
 /** @var bool $isDemo */
+/** @var array{mrr: string, arr: string, coverage_pct: string|null} $recurring */
+/** @var bool $hasOffers */
 /** @var array{draft: array{dimensions_done: int, dimensions: int}|null, latest: array{public_id: string, completed_at: string, global_display: string|null, level: string|null, reliability_label: string|null}|null} $diagnostic */
 use App\Support\FinanceFields;
 use App\Support\Format;
@@ -86,13 +88,25 @@ $hourlyLabel = $hourly['assumptions'] === [] ? 'Calculé' : sprintf('Calculé, %
     <?php endif; ?>
   </article>
 
-  <article class="card kpi kpi--empty">
-    <div class="kpi__top"><div class="card__title"><h2 class="kpi__label">MRR contractualisé</h2><?= ui_tip('tip-mrr', 'MRR contractualisé', 'MRR contractualisé', 'Revenu mensuel des contrats récurrents réellement signés. Les scénarios simulés ne sont jamais ajoutés à ce montant.') ?></div></div>
-    <p class="kpi__value">À venir</p>
-    <div class="kpi__meta">
-      <span>Module Revenus récurrents à venir.</span>
-      <?php if ($share !== null): ?><span>Part récurrente déclarée : <span class="num"><?= e(Format::percent($share['value'], 0)) ?></span> <?= ui_nature('declared') ?></span><?php endif; ?>
+  <article class="card kpi<?php if (!$hasOffers): ?> kpi--empty<?php endif; ?>">
+    <div class="kpi__top">
+      <div class="card__title"><h2 class="kpi__label">MRR contractualisé</h2><?= ui_tip('tip-mrr', 'MRR contractualisé', 'MRR contractualisé', 'Revenu mensuel des contrats récurrents réellement signés. Les scénarios simulés ne sont jamais ajoutés à ce montant.') ?></div>
+      <?php if ($hasOffers): ?><?= ui_nature('calculated') ?><?php endif; ?>
     </div>
+    <?php if ($hasOffers): ?>
+      <p class="kpi__value"><?= e(Format::number($recurring['mrr'], 0)) ?><span class="kpi__unit">€ / mois</span></p>
+      <div class="kpi__meta">
+        <span>ARR <span class="num"><?= e(Format::money($recurring['arr'], 0)) ?></span><?php if ($recurring['coverage_pct'] !== null): ?> · <span class="num"><?= e(Format::percent($recurring['coverage_pct'])) ?></span> du CA<?php endif; ?></span>
+        <?php if ($share !== null): ?><span>Part récurrente déclarée : <span class="num"><?= e(Format::percent($share['value'], 0)) ?></span> <?= ui_nature('declared') ?></span><?php endif; ?>
+        <a href="/app/recurrent">Voir le détail</a>
+      </div>
+    <?php else: ?>
+      <p class="kpi__value">Aucun contrat</p>
+      <div class="kpi__meta">
+        <span>Créez votre formule de maintenance pour suivre votre MRR.</span><a href="/app/recurrent/formules/nouvelle">Créer une formule</a>
+        <?php if ($share !== null): ?><span>Part récurrente déclarée : <span class="num"><?= e(Format::percent($share['value'], 0)) ?></span> <?= ui_nature('declared') ?></span><?php endif; ?>
+      </div>
+    <?php endif; ?>
   </article>
 </section>
 

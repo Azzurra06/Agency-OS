@@ -1,5 +1,5 @@
 /*
- * Agency OS — scripts de l'application (lots 1 à 3).
+ * Agency OS — scripts de l'application (lots 1 à 4).
  * Règles (docs/04-securite.md §5) : aucun innerHTML ni eval, aucune formule métier (le serveur calcule),
  * aucune donnée financière dans le stockage du navigateur. Compatible CSP stricte et Trusted Types.
  */
@@ -585,6 +585,232 @@ if (pricing) {
     await post(`/api/v1/pricing/simulations/${encodeURIComponent(simId)}/archive`, {}, () => window.location.reload());
   });
 }
+
+/* ---------- Revenus récurrents ---------- */
+const fmtEuro = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' });
+const fmtEuro0 = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
+const fmtNum0 = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 });
+const fmtPct = new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const fmtHours = new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const showMoney = (v) => (v === null || v === undefined ? '—' : fmtEuro.format(Number(v)));
+const showPct = (v) => (v === null || v === undefined ? '—' : `${fmtPct.format(Number(v))} %`);
+
+// Aperçu serveur générique : anti-rebond, annulation, réponse périmée ignorée (X-Request-Seq).
+function livePreview(url, collectBody, onData, onError, status) {
+  let timer = null;
+  let controller = null;
+  let seq = 0;
+  const run = async () => {
+    controller?.abort();
+    controller = new AbortController();
+    const mine = ++seq;
+    if (status) status.textContent = 'Calcul…';
+    let response;
+    try {
+      response = await fetch(url, {
+        method: 'POST', credentials: 'same-origin', signal: controller.signal,
+        headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken(), 'X-Request-Seq': String(mine) },
+        body: JSON.stringify(collectBody()),
+      });
+    } catch {
+      return;
+    }
+    if (Number(response.headers.get('X-Request-Seq')) !== seq) return;
+    const payload = await response.json().catch(() => null);
+    if (!response.ok) {
+      onError(payload?.error);
+      if (status) status.textContent = 'Valeurs à corriger';
+      return;
+    }
+    onData(payload.data);
+    if (status) status.textContent = 'À jour';
+  };
+  return () => {
+    clearTimeout(timer);
+    timer = setTimeout(run, 350);
+  };
+}
+
+document.querySelectorAll('[data-offer-row]').forEach((row) => {
+  row.querySelector('[data-contracts-save]')?.addEventListener('click', async () => {
+    const value = row.querySelector('[data-contracts-input]').value.trim();
+    const result = await api('PATCH', `/api/v1/recurring/offers/${encodeURIComponent(row.dataset.offerRow)}/contracts`, { active_contracts: value });
+    if (result.ok) {
+      toast('Contrats signés mis à jour.');
+      setTimeout(() => window.location.reload(), 500);
+    } else {
+      toast('Nombre de contrats invalide (entier de 0 à 10 000).');
+    }
+  });
+});
+
+document.querySelector('[data-accept-share]')?.addEventListener('click', async () => {
+  if (!(await confirmAction('Mettre à jour la part déclarée ?', 'La part récurrente déclarée dans votre profil sera remplacée par la couverture calculée à partir des contrats signés. Le changement est journalisé.', 'Remplacer', 'primary'))) return;
+  const result = await api('POST', '/api/v1/financial-profile/recurring-share/accept-computed', {});
+  if (result.ok) window.location.reload(); else toast(result.error?.message ?? 'Erreur.');
+});
+
+document.querySelector('[data-scenario-create]')?.addEventListener('click', async () => {
+  const result = await api('POST', '/api/v1/recurring/scenarios', { horizon: '12' });
+  if (result.ok) window.location.assign(`/app/recurrent/scenarios/${encodeURIComponent(result.data.public_id)}`);
+  else toast(result.error?.fields ? Object.values(result.error.fields)[0] : (result.error?.message ?? 'Erreur.'));
+});
+
+const offerEditor = document.querySelector('[data-offer-editor]');
+if (offerEditor) {
+  const id = offerEditor.dataset.id;
+  const form = offerEditor.querySelector('[data-offer-form]');
+  const collect = () => {
+    const data = serialise(form);
+    data.billing_period = form.querySelector('[name="billing_period"]:checked')?.value ?? 'monthly';
+    data.items = form.querySelector('[data-items]').value.split('\n').map((l) => l.trim()).filter((l) => l !== '');
+    return data;
+  };
+  const schedule = livePreview('/api/v1/recurring/calculate', () => ({ ...collect(), type: 'offer' }), (e) => {
+    showErrors(form, null);
+    offerEditor.querySelectorAll('[data-e]').forEach((el) => {
+      const key = el.dataset.e;
+      el.textContent = key.endsWith('_pct') ? showPct(e[key]) : showMoney(e[key]);
+    });
+    offerEditor.querySelector('[data-e-unprofitable]').hidden = !e.unprofitable;
+  }, (error) => showErrors(form, error), offerEditor.querySelector('[data-calc-status]'));
+  form.addEventListener('input', schedule);
+  form.addEventListener('change', schedule);
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const result = id
+      ? await api('PATCH', `/api/v1/recurring/offers/${encodeURIComponent(id)}`, collect())
+      : await api('POST', '/api/v1/recurring/offers', collect());
+    if (!result.ok) {
+      showErrors(form, result.error);
+      return;
+    }
+    window.location.assign('/app/recurrent');
+  });
+  offerEditor.querySelector('[data-offer-delete]')?.addEventListener('click', async (event) => {
+    const name = event.currentTarget.dataset.name ?? '';
+    if (!(await confirmAction('Supprimer la formule ?', `« ${name} » et ses contrats seront supprimés. Les scénarios figés restent consultables.`, 'Supprimer la formule'))) return;
+    const result = await api('DELETE', `/api/v1/recurring/offers/${encodeURIComponent(id)}`);
+    if (result.ok) window.location.assign('/app/recurrent'); else toast(result.error?.message ?? 'Erreur.');
+  });
+}
+
+let projectionChart = null;
+async function drawProjection(data) {
+  const canvas = document.getElementById('chart-projection');
+  if (!canvas || !window.Chart) return;
+  const css = getComputedStyle(document.documentElement);
+  const token = (name) => css.getPropertyValue(name).trim();
+  await document.fonts.ready;
+  window.Chart.defaults.font.family = 'Poppins';
+  window.Chart.defaults.color = token('--color-text-tertiary');
+  if (projectionChart) {
+    projectionChart.data.labels = data.labels;
+    projectionChart.data.datasets[0].data = data.mrr;
+    projectionChart.update();
+    return;
+  }
+  projectionChart = new window.Chart(canvas, {
+    type: 'line',
+    data: { labels: data.labels, datasets: [{
+      label: 'MRR simulé', data: data.mrr, borderColor: token('--color-accent'), borderDash: [6, 4], borderWidth: 2, pointRadius: 2, fill: false,
+    }] },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx) => `${fmtEuro.format(ctx.raw)} (simulé)` } } },
+      scales: {
+        x: { grid: { display: false } },
+        y: { grid: { color: token('--color-border') }, border: { display: false }, ticks: { callback: (v) => fmtEuro0.format(v), maxTicksLimit: 5 } },
+      },
+    },
+  });
+}
+
+const scenarioEl = document.querySelector('[data-scenario]');
+if (scenarioEl) {
+  const id = scenarioEl.dataset.id;
+  const editable = scenarioEl.dataset.editable === '1';
+  const form = scenarioEl.querySelector('[data-scenario-form]');
+  const source = document.getElementById('data-projection');
+  window.addEventListener('load', () => drawProjection(JSON.parse(source?.textContent ?? '{"labels":[],"mrr":[]}')));
+  const collect = () => ({
+    name: form.querySelector('[name="name"]').value.trim() || null,
+    horizon: form.querySelector('[name="horizon"]:checked')?.value ?? '12',
+    entries: [...form.querySelectorAll('[data-entry]')].map((row) => ({
+      offer: row.dataset.entry,
+      starting_clients: normaliseDecimal(row.querySelector('[data-field="starting_clients"]').value) ?? '0',
+      new_clients_per_month: normaliseDecimal(row.querySelector('[data-field="new_clients_per_month"]').value) ?? '0',
+      monthly_churn_pct: normaliseDecimal(row.querySelector('[data-field="monthly_churn_pct"]').value) ?? '0',
+    })),
+  });
+  const set = (key, text) => scenarioEl.querySelectorAll(`[data-p="${key}"]`).forEach((el) => { el.textContent = text; });
+  const render = (p) => {
+    const months = p.months ?? [];
+    const last = months[months.length - 1];
+    set('final_mrr', last ? fmtNum0.format(Number(last.mrr)) : '—');
+    set('final_clients', last ? last.clients_rounded : '—');
+    set('horizon', String(months.length));
+    set('cumulative', p.cumulative ? fmtNum0.format(Number(p.cumulative)) : '—');
+    set('cumulative_6', p.cumulative_6 ? fmtEuro0.format(Number(p.cumulative_6)) : '—');
+    set('final_capacity', last?.capacity_use_pct ? showPct(last.capacity_use_pct) : '—');
+    set('final_hours', last ? `${fmtHours.format(Number(last.hours))} h` : '—');
+    scenarioEl.querySelector('[data-p-capacity]').hidden = !p.capacity_exceeded;
+    scenarioEl.querySelector('[data-p-rows]').replaceChildren(...months.map((m) => {
+      const tr = document.createElement('tr');
+      for (const [text, num] of [[String(m.month), false], [m.clients_rounded, true], [showMoney(m.mrr), true], [`${fmtHours.format(Number(m.hours))} h`, true], [m.capacity_use_pct ? showPct(m.capacity_use_pct) : '—', true]]) {
+        const td = document.createElement('td');
+        if (num) td.className = 'num';
+        td.textContent = text;
+        tr.append(td);
+      }
+      return tr;
+    }));
+    drawProjection({ labels: months.map((m) => `M${m.month}`), mrr: months.map((m) => Number(m.mrr)) });
+  };
+  if (editable) {
+    const saveStatus = scenarioEl.querySelector('[data-save-status]');
+    const schedule = livePreview('/api/v1/recurring/calculate', () => ({ ...collect(), type: 'projection' }), (p) => { showErrors(form, null); render(p); },
+      (error) => showErrors(form, error), null);
+    const changed = () => {
+      if (saveStatus) saveStatus.textContent = 'Modifications non enregistrées : la projection est calculée sans rien enregistrer.';
+      schedule();
+    };
+    form.addEventListener('input', changed);
+    form.addEventListener('change', changed);
+    form.addEventListener('submit', (event) => event.preventDefault());
+    scenarioEl.querySelector('[data-scenario-save]')?.addEventListener('click', async () => {
+      const result = await api('PUT', `/api/v1/recurring/scenarios/${encodeURIComponent(id)}`, collect());
+      if (result.ok) {
+        showErrors(form, null);
+        if (saveStatus) saveStatus.textContent = 'Scénario enregistré.';
+        toast('Scénario enregistré.');
+      } else {
+        showErrors(form, result.error);
+      }
+    });
+  }
+  const act = async (url, method, after) => {
+    const result = await api(method, url, method === 'DELETE' ? undefined : {});
+    if (result.ok) after(result.data); else toast(result.error?.fields ? Object.values(result.error.fields)[0] : (result.error?.message ?? 'Erreur.'));
+  };
+  const base = `/api/v1/recurring/scenarios/${encodeURIComponent(id)}`;
+  scenarioEl.querySelector('[data-scenario-finalize]')?.addEventListener('click', async () => {
+    if (!(await confirmAction('Finaliser le scénario ?', 'La projection et ses hypothèses (prix, temps, coût horaire, capacité) seront figées. Enregistrez vos modifications avant. Pour changer ensuite, utilisez « Dupliquer pour modifier ».', 'Finaliser', 'primary'))) return;
+    act(`${base}/finalize`, 'POST', () => window.location.reload());
+  });
+  scenarioEl.querySelector('[data-scenario-new-version]')?.addEventListener('click', () => act(`${base}/new-version`, 'POST', (d) => window.location.assign(`/app/recurrent/scenarios/${encodeURIComponent(d.public_id)}`)));
+  scenarioEl.querySelector('[data-scenario-archive]')?.addEventListener('click', async () => {
+    if (!(await confirmAction('Archiver ce scénario ?', 'Il restera consultable.', 'Archiver', 'primary'))) return;
+    act(`${base}/archive`, 'POST', () => window.location.reload());
+  });
+  scenarioEl.querySelector('[data-scenario-delete]')?.addEventListener('click', async () => {
+    if (!(await confirmAction('Supprimer ce brouillon ?', 'Ses paramètres seront supprimés.', 'Supprimer'))) return;
+    act(base, 'DELETE', () => window.location.assign('/app/recurrent'));
+  });
+}
+
+/* ---------- Largeurs proportionnelles (barres empilées) via CSSOM ---------- */
+document.querySelectorAll('[data-width]').forEach((el) => el.style.setProperty('width', `${Number(el.dataset.width)}%`));
 
 /* ---------- Jauges : valeur portée par data-value, appliquée via CSSOM ---------- */
 document.querySelectorAll('[data-value]').forEach((el) => el.style.setProperty('--value', el.dataset.value));

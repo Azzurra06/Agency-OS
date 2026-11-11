@@ -166,7 +166,7 @@ final class FinancialProfileService
     /**
      * Entrées EXACTES (non arrondies) du pricing : coût horaire complet et taux de charges variables générales.
      *
-     * @return array{hourly_cost: DerivedValue, variable_rate: DerivedValue, period: string|null}
+     * @return array{hourly_cost: DerivedValue, variable_rate: DerivedValue, period: string|null, annualized_revenue: DerivedValue, monthly_capacity: DerivedValue, declared_share: Decimal|null}
      */
     public function pricingInputs(OrgId $org): array
     {
@@ -181,6 +181,9 @@ final class FinancialProfileService
             'hourly_cost' => $this->calculator->hourlyCost($p),
             'variable_rate' => $this->calculator->generalVariableRate($p),
             'period' => $period,
+            'annualized_revenue' => $this->calculator->annualizedRevenue($p),
+            'monthly_capacity' => $this->calculator->monthlyCapacity($p),
+            'declared_share' => $p->recurringShareDeclared,
         ];
     }
 

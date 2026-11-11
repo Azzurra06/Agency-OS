@@ -9,13 +9,12 @@ use App\Http\Request;
 use App\Http\Response;
 
 /**
- * Écrans de l'application : vue d'ensemble, onboarding, paramètres. Les modules récurrent
- * et stratégie arrivent aux lots suivants (page d'attente).
+ * Écrans de l'application : vue d'ensemble, onboarding, paramètres. Le module stratégie
+ * arrive aux lots suivants (page d'attente).
  */
 final class AppPagesController extends Controller
 {
     private const MODULES = [
-        'recurrent' => ['Revenus récurrents', 'repeat', 4, 'Concevez vos offres de maintenance et simulez votre MRR.'],
         'strategie' => ['Stratégie', 'target', 5, 'Recevez des recommandations priorisées et suivez votre plan d\'action.'],
     ];
 
@@ -31,6 +30,8 @@ final class AppPagesController extends Controller
             'derived' => $this->app->financialProfiles()->derived($org),
             'services' => $this->app->serviceRepository()->all($org, true),
             'diagnostic' => $this->app->diagnostics()->overview($org),
+            'recurring' => $this->app->recurring()->summary($org),
+            'hasOffers' => $this->app->recurringRepository()->offers($org) !== [],
         ]);
     }
 
@@ -74,7 +75,7 @@ final class AppPagesController extends Controller
     public function module(Request $request): Response
     {
         $key = trim(substr($request->path, strlen('/app/')), '/');
-        [$label, $icon, $lot, $promise] = self::MODULES[$key] ?? self::MODULES['recurrent'];
+        [$label, $icon, $lot, $promise] = self::MODULES[$key] ?? self::MODULES['strategie'];
 
         return $this->screen($request, 'app/module-soon', $key, $label, ['moduleLabel' => $label, 'moduleIcon' => $icon, 'lot' => $lot, 'promise' => $promise]);
     }
