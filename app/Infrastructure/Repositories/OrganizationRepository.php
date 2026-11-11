@@ -67,6 +67,14 @@ final class OrganizationRepository
         }
     }
 
+    /** Arrondi commercial proposé à côté du prix recommandé (réglage de l'organisation). */
+    public function priceRounding(OrgId $org): string
+    {
+        $row = $this->db->fetchOne('SELECT price_rounding FROM organization_settings WHERE organization_id = :org', ['org' => $org->value]);
+
+        return $row === null ? '10' : TypedArray::string($row, 'price_rounding', '10');
+    }
+
     public function setOnboardingStep(OrgId $org, int $step, bool $completed): void
     {
         $now = $this->clock->nowUtc()->format('Y-m-d H:i:s');

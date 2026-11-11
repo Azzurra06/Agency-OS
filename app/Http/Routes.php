@@ -9,10 +9,12 @@ use App\Http\Controllers\Api\DiagnosticApiController;
 use App\Http\Controllers\Api\FinancialProfileApiController;
 use App\Http\Controllers\Api\HealthController;
 use App\Http\Controllers\Api\OrganizationApiController;
+use App\Http\Controllers\Api\PricingApiController;
 use App\Http\Controllers\Api\ServicesApiController;
 use App\Http\Controllers\Pages\AppPagesController;
 use App\Http\Controllers\Pages\AuthPagesController;
 use App\Http\Controllers\Pages\DiagnosticPagesController;
+use App\Http\Controllers\Pages\PricingPagesController;
 use App\Http\Controllers\Pages\DemoPagesController;
 use App\Http\Controllers\Pages\PublicPagesController;
 
@@ -34,6 +36,8 @@ final class Routes
         $services = new ServicesApiController($app);
         $diagnostic = new DiagnosticApiController($app);
         $diagnosticPages = new DiagnosticPagesController($app);
+        $pricing = new PricingApiController($app);
+        $pricingPages = new PricingPagesController($app);
         $p = Route::ACCESS_PUBLIC;
 
         // Public
@@ -65,7 +69,9 @@ final class Routes
         $r->add('GET', '/app/diagnostic', $diagnosticPages->home(...), 'app.read');
         $r->add('GET', '/app/diagnostic/questionnaire', $diagnosticPages->questionnaire(...), 'app.read');
         $r->add('GET', '/app/diagnostic/resultats/{id}', $diagnosticPages->results(...), 'app.read');
-        foreach (['pricing', 'recurrent', 'strategie'] as $module) {
+        $r->add('GET', '/app/pricing', $pricingPages->index(...), 'app.read');
+        $r->add('GET', '/app/pricing/{id}', $pricingPages->show(...), 'app.read');
+        foreach (['recurrent', 'strategie'] as $module) {
             $r->add('GET', '/app/' . $module, $pages->module(...), 'app.read');
         }
 
@@ -88,6 +94,19 @@ final class Routes
         $r->add('POST', '/api/v1/diagnostics/{id}/complete', $diagnostic->complete(...), 'diagnostic.write');
         $r->add('GET', '/api/v1/diagnostics/{id}/results', $diagnostic->results(...), 'app.read');
         $r->add('DELETE', '/api/v1/diagnostics/{id}', $diagnostic->destroy(...), 'diagnostic.write');
+        $r->add('POST', '/api/v1/pricing/calculate', $pricing->calculate(...), 'app.read');
+        $r->add('GET', '/api/v1/pricing/templates/{category}', $pricing->template(...), 'app.read');
+        $r->add('GET', '/api/v1/pricing/simulations', $pricing->index(...), 'app.read');
+        $r->add('POST', '/api/v1/pricing/simulations', $pricing->store(...), 'pricing.write');
+        $r->add('GET', '/api/v1/pricing/simulations/{id}', $pricing->show(...), 'app.read');
+        $r->add('PATCH', '/api/v1/pricing/simulations/{id}', $pricing->update(...), 'pricing.write');
+        $r->add('DELETE', '/api/v1/pricing/simulations/{id}', $pricing->destroy(...), 'pricing.write');
+        $r->add('POST', '/api/v1/pricing/simulations/{id}/scenarios', $pricing->addScenario(...), 'pricing.write');
+        $r->add('POST', '/api/v1/pricing/simulations/{id}/finalize', $pricing->finalize(...), 'pricing.write');
+        $r->add('POST', '/api/v1/pricing/simulations/{id}/new-version', $pricing->newVersion(...), 'pricing.write');
+        $r->add('POST', '/api/v1/pricing/simulations/{id}/archive', $pricing->archive(...), 'pricing.write');
+        $r->add('PUT', '/api/v1/pricing/scenarios/{id}', $pricing->saveScenario(...), 'pricing.write');
+        $r->add('DELETE', '/api/v1/pricing/scenarios/{id}', $pricing->deleteScenario(...), 'pricing.write');
 
         return $r;
     }

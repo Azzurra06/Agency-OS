@@ -9,13 +9,12 @@ use App\Http\Request;
 use App\Http\Response;
 
 /**
- * Écrans de l'application : vue d'ensemble, onboarding, paramètres. Les modules pricing, récurrent
+ * Écrans de l'application : vue d'ensemble, onboarding, paramètres. Les modules récurrent
  * et stratégie arrivent aux lots suivants (page d'attente).
  */
 final class AppPagesController extends Controller
 {
     private const MODULES = [
-        'pricing' => ['Pricing', 'tag', 3, 'Vérifiez que vos prix couvrent vos coûts et votre marge cible.'],
         'recurrent' => ['Revenus récurrents', 'repeat', 4, 'Concevez vos offres de maintenance et simulez votre MRR.'],
         'strategie' => ['Stratégie', 'target', 5, 'Recevez des recommandations priorisées et suivez votre plan d\'action.'],
     ];
@@ -75,7 +74,7 @@ final class AppPagesController extends Controller
     public function module(Request $request): Response
     {
         $key = trim(substr($request->path, strlen('/app/')), '/');
-        [$label, $icon, $lot, $promise] = self::MODULES[$key] ?? self::MODULES['pricing'];
+        [$label, $icon, $lot, $promise] = self::MODULES[$key] ?? self::MODULES['recurrent'];
 
         return $this->screen($request, 'app/module-soon', $key, $label, ['moduleLabel' => $label, 'moduleIcon' => $icon, 'lot' => $lot, 'promise' => $promise]);
     }

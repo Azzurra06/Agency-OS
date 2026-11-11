@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application;
 
+use App\Domain\Finance\DerivedValue;
 use App\Domain\Finance\FinancialCalculator;
 use App\Domain\Finance\FinancialProfileData;
 use App\Domain\Finance\ReferencePeriod;
@@ -159,6 +160,27 @@ final class FinancialProfileService
                 'identity_complete' => $identity['activity_type'] !== null && $identity['team_size'] !== null && $identity['legal_status'] !== null,
                 'has_priced_service' => $this->services->hasPricedService($org),
             ]),
+        ];
+    }
+
+    /**
+     * Entrées EXACTES (non arrondies) du pricing : coût horaire complet et taux de charges variables générales.
+     *
+     * @return array{hourly_cost: DerivedValue, variable_rate: DerivedValue, period: string|null}
+     */
+    public function pricingInputs(OrgId $org): array
+    {
+        $p = $this->get($org);
+        $period = null;
+        try {
+            $period = $p->period()?->label();
+        } catch (InvalidArgumentException) {
+        }
+
+        return [
+            'hourly_cost' => $this->calculator->hourlyCost($p),
+            'variable_rate' => $this->calculator->generalVariableRate($p),
+            'period' => $period,
         ];
     }
 

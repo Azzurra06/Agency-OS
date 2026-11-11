@@ -47,6 +47,7 @@ final class DemoService
         private readonly FinancialProfileService $profiles,
         private readonly ServiceRepository $services,
         private readonly DiagnosticService $diagnostics,
+        private readonly PricingService $pricing,
         private readonly RateLimiter $limiter,
         private readonly SecurityEventLogger $events,
         private readonly SessionManager $sessions,
@@ -112,7 +113,7 @@ final class DemoService
     public function reset(OrgId $org, int $userId): void
     {
         $this->db->transaction(function () use ($org): void {
-            foreach (['diagnostics', 'financial_profile_changes', 'financial_profiles', 'services'] as $table) {
+            foreach (['pricing_simulations', 'diagnostics', 'financial_profile_changes', 'financial_profiles', 'services'] as $table) {
                 $this->db->run("DELETE FROM {$table} WHERE organization_id = :org", ['org' => $org->value]);
             }
             $this->db->run(
@@ -188,11 +189,67 @@ final class DemoService
             $this->services->create($org, $name, $category, $price === null ? null : Decimal::of($price), $volume);
         }
 
+        $this->seedPricing($org, $userId);
+
         $draft = $this->diagnostics->startOrResume($org, $userId);
         foreach (self::LUMEN_DIAGNOSTIC as $question => $option) {
             $this->diagnostics->answer($org, $draft['public_id'], ['question' => $question, 'option' => $option]);
         }
         $this->diagnostics->complete($org, $draft['public_id']);
+    }
+
+    /**
+     * Pricing fictif : « Site vitrine » finalisé (deux scénarios, prix actuel 3 200 € sous le prix recommandé)
+     * et un brouillon pour la refonte.
+     */
+    private function seedPricing(OrgId $org, int $userId): void
+    {
+        $services = [];
+        foreach ($this->services->all($org) as $service) {
+            $services[$service['name']] = $service['public_id'];
+        }
+        $lines = self::lines(...);
+        $showcase = $this->pricing->create($org, ['service' => $services['Site vitrine WordPress']]);
+        $view = $this->pricing->view($org, $showcase) ?? [];
+        /** @var list<array{public_id: string}> $scenarios */
+        $scenarios = $view['scenarios'] ?? [];
+        $this->pricing->saveScenario($org, $scenarios[0]['public_id'], [
+            'label' => 'Scénario A', 'hourly_cost_mode' => 'profile', 'contingency_pct' => '0.00', 'target_margin_pct' => '30.00',
+            'lines' => $lines([['Cadrage', '4.00'], ['Design', '10.00'], ['Développement', '18.00'], ['Contenus et recette', '6.00'], ['Gestion de projet', '2.00']], [['Thème premium', '300.00']]),
+        ]);
+        $b = $this->pricing->addScenario($org, $showcase, ['copy_of' => $scenarios[0]['public_id']]);
+        $this->pricing->saveScenario($org, $b, [
+            'label' => 'Design allégé', 'hourly_cost_mode' => 'profile', 'contingency_pct' => '10.00', 'target_margin_pct' => '30.00',
+            'lines' => $lines([['Cadrage', '4.00'], ['Design', '6.00'], ['Développement', '18.00'], ['Contenus et recette', '6.00'], ['Gestion de projet', '2.00']], [['Thème premium', '300.00']]),
+        ]);
+        $this->pricing->finalize($org, $showcase, $userId);
+
+        $redesign = $this->pricing->create($org, ['service' => $services['Refonte de site']]);
+        $view = $this->pricing->view($org, $redesign) ?? [];
+        /** @var list<array{public_id: string}> $scenarios */
+        $scenarios = $view['scenarios'] ?? [];
+        $this->pricing->saveScenario($org, $scenarios[0]['public_id'], [
+            'label' => 'Scénario A', 'hourly_cost_mode' => 'profile', 'contingency_pct' => '10.00', 'target_margin_pct' => '30.00',
+            'lines' => $lines([['Audit de l\'existant', '6.00'], ['Maquettes', '10.00'], ['Intégration et reprise des contenus', '30.00'], ['Redirections et recette', '6.00']], []),
+        ]);
+    }
+
+    /**
+     * @param list<array{0: string, 1: string}> $time
+     * @param list<array{0: string, 1: string}> $costs
+     * @return list<array<string, string>>
+     */
+    private static function lines(array $time, array $costs): array
+    {
+        $out = [];
+        foreach ($time as [$label, $hours]) {
+            $out[] = ['kind' => 'time', 'label' => $label, 'hours' => $hours];
+        }
+        foreach ($costs as [$label, $amount]) {
+            $out[] = ['kind' => 'direct_cost', 'label' => $label, 'amount' => $amount];
+        }
+
+        return $out;
     }
 
     private function now(): string

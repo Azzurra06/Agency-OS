@@ -1,5 +1,5 @@
 /*
- * Agency OS — scripts de l'application (lots 1 et 2).
+ * Agency OS — scripts de l'application (lots 1 à 3).
  * Règles (docs/04-securite.md §5) : aucun innerHTML ni eval, aucune formule métier (le serveur calcule),
  * aucune donnée financière dans le stockage du navigateur. Compatible CSP stricte et Trusted Types.
  */
@@ -359,6 +359,232 @@ async function initRadar() {
   });
 }
 window.addEventListener('load', initRadar);
+
+/* ---------- Pricing : création d'une simulation ---------- */
+document.querySelector('[data-pricing-create]')?.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const service = form.querySelector('[name="service"]').value;
+  const result = await api('POST', '/api/v1/pricing/simulations', service ? { service } : {});
+  if (result.ok) window.location.assign(`/app/pricing/${encodeURIComponent(result.data.public_id)}`);
+  else toast(result.error?.message ?? 'Erreur.');
+});
+
+/* ---------- Pricing : simulateur ---------- */
+const pricing = document.querySelector('[data-pricing]');
+if (pricing) {
+  const simId = pricing.dataset.simulation;
+  const scenarioId = pricing.dataset.scenario;
+  const editable = pricing.dataset.editable === '1';
+  const form = pricing.querySelector('[data-pricing-form]');
+  const page = (query = '') => `/app/pricing/${encodeURIComponent(simId)}${query}`;
+  const euro = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' });
+  const euro0 = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
+  const pct = new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  const pct2 = new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const hours = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 2 });
+  // Affichage uniquement : les valeurs arrivent du serveur sous forme de chaînes déjà calculées.
+  const money = (v) => (v === null || v === undefined ? '—' : euro.format(Number(v)));
+  const percent = (v) => (v === null || v === undefined ? '—' : `${pct.format(Number(v))} %`);
+  const ERRORS = {
+    hourly_cost_unavailable: 'Coût horaire non calculable : complétez votre profil financier ou saisissez un coût horaire personnalisé.',
+    margin_plus_variable_rate_too_high: 'La marge cible et le taux de charges variables dépassent 100 % du prix : réduisez la marge cible.',
+    empty_scenario: 'Ajoutez au moins une ligne de temps ou de frais.',
+  };
+  const alertText = (code, gap) => ({
+    price_below_floor: 'Le prix testé est sous le prix plancher : à ce prix, la prestation fait perdre de l’argent.',
+    price_below_recommended: `Le prix testé est ${pct.format(-Number(gap))} % sous le prix recommandé : la marge cible n’est pas atteinte.`,
+    variable_rate_zero: 'Aucune charge variable générale dans votre profil : le taux appliqué est de 0 %.',
+    variable_rate_unavailable: 'Taux de charges variables générales non calculable (profil incomplet) : 0 % est utilisé.',
+  }[code] ?? code);
+
+  const setAll = (key, text) => pricing.querySelectorAll(`[data-r="${key}"]`).forEach((el) => { el.textContent = text; });
+
+  const collect = () => {
+    const data = serialise(form.querySelector('.form-section'));
+    const body = {
+      label: data.label ?? null,
+      hourly_cost_mode: form.querySelector('[name="hourly_cost_mode"]:checked')?.value ?? 'profile',
+      hourly_cost_custom: normaliseDecimal(form.querySelector('[name="hourly_cost_custom"]').value),
+      contingency_pct: normaliseDecimal(form.querySelector('[name="contingency_pct"]').value),
+      target_margin_pct: normaliseDecimal(form.querySelector('[name="target_margin_pct"]').value),
+      proposed_price: normaliseDecimal(form.querySelector('[name="proposed_price"]').value),
+      lines: [],
+    };
+    if (body.hourly_cost_mode !== 'custom') body.hourly_cost_custom = null;
+    form.querySelectorAll('[data-line]').forEach((row) => {
+      const kind = row.dataset.line;
+      const label = row.querySelector('[data-field="label"]').value.trim();
+      const value = normaliseDecimal(row.querySelector(kind === 'time' ? '[data-field="hours"]' : '[data-field="amount"]').value);
+      if (label === '' && value === null) return; // ligne vide ignorée
+      body.lines.push(kind === 'time' ? { kind, label: label || 'Phase', hours: value ?? '0' } : { kind, label: label || 'Frais', amount: value ?? '0' });
+    });
+    return body;
+  };
+
+  const render = (data) => {
+    const error = data.error;
+    const errorBox = pricing.querySelector('[data-r-error]');
+    errorBox.hidden = !error;
+    pricing.querySelector('[data-r-error-text]').textContent = error ? (ERRORS[error] ?? 'Calcul impossible avec ces paramètres.') : '';
+    const r = data.results ?? {};
+    const hc = data.inputs?.hourly_cost?.value;
+    setAll('hourly_cost', hc ? `${euro.format(Number(hc))}/h` : 'non calculable');
+    setAll('variable_rate', `${pct2.format(Number(data.inputs?.variable_rate_pct?.value ?? 0))} %`);
+    setAll('total_hours', r.total_hours ? `${hours.format(Number(r.total_hours))} h` : '—');
+    for (const key of ['direct_costs', 'base_cost', 'floor_price', 'recommended_price']) setAll(key, money(r[key]));
+    pricing.querySelector('[data-r-rounded-line]').hidden = !data.rounded_price;
+    setAll('rounded_price', data.rounded_price ? euro0.format(Number(data.rounded_price)) : '');
+    const at = r.at_price;
+    pricing.querySelector('[data-r-at-price]').hidden = !at;
+    if (at) {
+      for (const key of ['price', 'full_cost', 'result', 'annual_shortfall']) setAll(key, money(at[key]));
+      for (const key of ['margin_on_price_pct', 'markup_on_cost_pct']) setAll(key, percent(at[key]));
+      pricing.querySelector('[data-r-shortfall-line]').hidden = !at.annual_shortfall;
+    } else {
+      setAll('margin_on_price_pct', '—');
+    }
+    const alerts = pricing.querySelector('[data-r-alerts]');
+    alerts.replaceChildren(...(data.alerts ?? []).map((a) => {
+      const p = document.createElement('p');
+      p.className = `alert alert--${a.level === 'danger' ? 'danger' : (a.level === 'warning' ? 'warning' : 'info')}`;
+      p.textContent = alertText(a.code, at?.gap_to_recommended_pct);
+      return p;
+    }));
+  };
+
+  // Aperçu serveur : anti-rebond de 350 ms, requête précédente annulée, réponse périmée ignorée (X-Request-Seq).
+  let timer = null;
+  let controller = null;
+  let seq = 0;
+  const calcStatus = pricing.querySelector('[data-calc-status]');
+  const saveStatus = pricing.querySelector('[data-save-status]');
+  const preview = async () => {
+    controller?.abort();
+    controller = new AbortController();
+    const mine = ++seq;
+    if (calcStatus) calcStatus.textContent = 'Calcul…';
+    let response;
+    try {
+      response = await fetch('/api/v1/pricing/calculate', {
+        method: 'POST', credentials: 'same-origin', signal: controller.signal,
+        headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken(), 'X-Request-Seq': String(mine) },
+        body: JSON.stringify({ ...collect(), simulation: simId }),
+      });
+    } catch {
+      return; // annulée ou réseau : la prochaine saisie relancera le calcul
+    }
+    if (Number(response.headers.get('X-Request-Seq')) !== seq) return;
+    const payload = await response.json().catch(() => null);
+    if (!response.ok) {
+      showErrors(form, payload?.error);
+      if (calcStatus) calcStatus.textContent = 'Valeurs à corriger';
+      return;
+    }
+    showErrors(form, null);
+    render(payload.data);
+    if (calcStatus) calcStatus.textContent = 'À jour';
+  };
+  const schedule = () => {
+    if (!editable) return;
+    if (saveStatus) saveStatus.textContent = 'Modifications non enregistrées : l’aperçu est calculé sans rien enregistrer.';
+    clearTimeout(timer);
+    timer = setTimeout(preview, 350);
+  };
+
+  if (editable) {
+    form.addEventListener('input', schedule);
+    form.addEventListener('change', (event) => {
+      if (event.target.name === 'hourly_cost_mode') {
+        form.querySelector('[data-custom-hc]').hidden = event.target.value !== 'custom';
+      }
+      schedule();
+    });
+    form.addEventListener('submit', (event) => event.preventDefault());
+    form.addEventListener('click', (event) => {
+      const remove = event.target.closest('[data-line-remove]');
+      if (remove) {
+        remove.closest('tr').remove();
+        schedule();
+      }
+      const add = event.target.closest('[data-line-add]');
+      if (add) {
+        const kind = add.dataset.lineAdd;
+        const row = pricing.querySelector(`template[data-line-template="${kind}"]`).content.firstElementChild.cloneNode(true);
+        form.querySelector(`[data-lines="${kind}"]`).append(row);
+        row.querySelector('input').focus();
+      }
+    });
+    pricing.querySelector('[data-pricing-template]')?.addEventListener('click', async (event) => {
+      const result = await api('GET', `/api/v1/pricing/templates/${encodeURIComponent(event.currentTarget.dataset.pricingTemplate)}`);
+      if (!result.ok) return;
+      const body = form.querySelector('[data-lines="time"]');
+      const template = pricing.querySelector('template[data-line-template="time"]');
+      for (const line of result.data.lines) {
+        const row = template.content.firstElementChild.cloneNode(true);
+        row.querySelector('[data-field="label"]').value = line.label;
+        row.querySelector('[data-field="hours"]').value = line.hours;
+        body.append(row);
+      }
+      pricing.querySelector('[data-template-warning]').hidden = false;
+      schedule();
+    });
+    pricing.querySelector('[data-pricing-save]')?.addEventListener('click', async (event) => {
+      const button = event.currentTarget;
+      button.setAttribute('aria-busy', 'true');
+      const result = await api('PUT', `/api/v1/pricing/scenarios/${encodeURIComponent(scenarioId)}`, collect());
+      button.removeAttribute('aria-busy');
+      if (result.ok) {
+        showErrors(form, null);
+        if (saveStatus) saveStatus.textContent = `Scénario enregistré à ${new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit' }).format(new Date())}.`;
+        toast('Scénario enregistré.');
+      } else {
+        showErrors(form, result.error);
+      }
+    });
+  }
+
+  const post = async (url, body, after) => {
+    const result = await api('POST', url, body);
+    if (result.ok) after(result.data); else toast(result.error?.fields ? Object.values(result.error.fields)[0] : (result.error?.message ?? 'Erreur.'));
+    return result;
+  };
+  pricing.querySelector('[data-pricing-add-scenario]')?.addEventListener('click', (event) => post(
+    `/api/v1/pricing/simulations/${encodeURIComponent(simId)}/scenarios`,
+    { copy_of: event.currentTarget.dataset.copyOf },
+    (data) => window.location.assign(page(`?scenario=${encodeURIComponent(data.public_id)}`)),
+  ));
+  pricing.querySelector('[data-pricing-reference]')?.addEventListener('click', async (event) => {
+    const result = await api('PATCH', `/api/v1/pricing/simulations/${encodeURIComponent(simId)}`, { reference: event.currentTarget.dataset.pricingReference });
+    if (result.ok) window.location.reload(); else toast(result.error?.message ?? 'Erreur.');
+  });
+  pricing.querySelector('[data-pricing-delete-scenario]')?.addEventListener('click', async (event) => {
+    if (!(await confirmAction('Supprimer ce scénario ?', 'Ses paramètres et ses lignes seront supprimés.', 'Supprimer le scénario'))) return;
+    const result = await api('DELETE', `/api/v1/pricing/scenarios/${encodeURIComponent(event.currentTarget.dataset.pricingDeleteScenario)}`);
+    if (result.ok) window.location.assign(page()); else toast(result.error?.message ?? 'Erreur.');
+  });
+  pricing.querySelector('[data-pricing-delete]')?.addEventListener('click', async () => {
+    if (!(await confirmAction('Supprimer ce brouillon ?', 'Ses scénarios seront supprimés. Les versions figées sont conservées.', 'Supprimer le brouillon'))) return;
+    const result = await api('DELETE', `/api/v1/pricing/simulations/${encodeURIComponent(simId)}`);
+    if (result.ok) window.location.assign('/app/pricing'); else toast(result.error?.message ?? 'Erreur.');
+  });
+  pricing.querySelector('[data-pricing-finalize]')?.addEventListener('click', async () => {
+    if (!(await confirmAction(
+      'Finaliser la simulation ?',
+      'Les hypothèses (coût horaire, charges variables, prix actuel) et les résultats seront figés. Cette version deviendra la référence de la prestation pour la stratégie ; pour la modifier ensuite, vous créerez une nouvelle version. Pensez à enregistrer vos scénarios avant.',
+      'Finaliser', 'primary',
+    ))) return;
+    await post(`/api/v1/pricing/simulations/${encodeURIComponent(simId)}/finalize`, {}, () => window.location.reload());
+  });
+  pricing.querySelector('[data-pricing-new-version]')?.addEventListener('click', () => post(
+    `/api/v1/pricing/simulations/${encodeURIComponent(simId)}/new-version`, {},
+    (data) => window.location.assign(`/app/pricing/${encodeURIComponent(data.public_id)}`),
+  ));
+  pricing.querySelector('[data-pricing-archive]')?.addEventListener('click', async () => {
+    if (!(await confirmAction('Archiver cette version ?', 'Elle restera consultable, mais ne sera plus la référence de la prestation pour la stratégie.', 'Archiver', 'primary'))) return;
+    await post(`/api/v1/pricing/simulations/${encodeURIComponent(simId)}/archive`, {}, () => window.location.reload());
+  });
+}
 
 /* ---------- Jauges : valeur portée par data-value, appliquée via CSSOM ---------- */
 document.querySelectorAll('[data-value]').forEach((el) => el.style.setProperty('--value', el.dataset.value));

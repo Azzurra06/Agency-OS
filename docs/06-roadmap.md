@@ -53,8 +53,8 @@
 | Phase 3 | UX/UI : design system, composants, écrans, états, bulles d'information | `07-ux-ui.md` et prototype statique (`prototype/`) | ✅ validé |
 | Phase 4, lot 0 | Socle : bootstrap et configuration, profils `portfolio`/`production`, PDO, migrations, `Decimal`, middlewares de sécurité (en-têtes, session, CSRF, authentification, contexte d'organisation, limitation des tentatives), dépôts restreints à l'organisation, `FieldCrypto`, journalisation, `Mailer` en capture, exécuteur cron, CI | code et tests (§5) | ✅ validé |
 | Phase 4, lot 1 | Démo (création, quotas, expiration, purge), authentification complète (comptes de test), layout, vue d'ensemble, profil et onboarding | code et tests (§6) | ✅ validé |
-| **Phase 4, lot 2** | Diagnostic (questionnaire v1, scoring, résultats partiels) | code et tests (§7) | ⏳ livré, à valider |
-| Phase 4, lot 3 | Pricing (simulateur, aperçus, finalisation, versions) | — | — |
+| Phase 4, lot 2 | Diagnostic (questionnaire v1, scoring, résultats partiels) | code et tests (§7) | ✅ validé |
+| **Phase 4, lot 3** | Pricing (simulateur, aperçus, finalisation, versions) | code et tests (§8) | ⏳ livré, à valider |
 | Phase 4, lot 4 | Revenus récurrents (offres, contrats, scénarios, projections) | — | — |
 | Phase 4, lot 5 | Stratégie (moteur de règles, sources des recommandations, plan d'action) | — | — |
 | Phase 4, lot 6 | Dashboard complet, historique, méthodologie, RGPD (export et suppression, utiles aux comptes de test), pages légales du portfolio | — | — |
@@ -116,3 +116,22 @@
 **Diagnostic partiel (ajouté à ta demande).** Avec le questionnaire v1, une seule question par dimension a la politique « inconnue » : une clôture complète ne peut donc pas produire de dimension non calculable. Plutôt que de changer le sens des questions (une pratique qu'on ignore reste une pratique absente), la clôture est désormais possible **avec des questions sans réponse, après confirmation explicite** (« Terminer quand même ») : elles sont exclues du calcul comme une réponse inconnue, les dimensions trop incomplètes sont « Données insuffisantes », le score global n'est pas affiché et l'encadré « Informations manquantes » liste chaque question (« sans réponse » ou « Je ne sais pas ») avec **[Compléter ces réponses]**. La clôture reste refusée si aucune dimension n'est calculable. Règle reportée dans 03 §6.3 et 05 §3.3 ; le fichier v1 n'est pas modifié (empreinte inchangée).
 
 **Total : 168 tests, 1 788 assertions**, PHPStan niveau max sans erreur, aucun motif interdit.
+
+## 8. Lot 3 : ce qui a été livré (11/11/2026)
+
+| Exigence | Mise en œuvre | Vérification |
+|---|---|---|
+| Formules | `PricingCalculator` (BCMath, fonctions pures) : heures avec aléas, coût direct et de structure, prix plancher, prix recommandé (marge **sur prix de vente** exacte), résultat, marge sur prix de vente, majoration sur coût, écart, manque à gagner ; arrondi commercial proposé **à côté** du prix exact (réglage `price_rounding`) ; erreurs stables (`margin_plus_variable_rate_too_high`, `empty_scenario`, `hourly_cost_unavailable`…) | cas PR-1 à PR-4 au centime, bornes, alertes, reproductibilité |
+| Entrées du profil | Coût horaire et taux de charges variables générales lus **exacts** (non arrondis) dans le profil ; coût horaire personnalisé possible par scénario ; taux non calculable signalé (0 % utilisé, alerte) | tests de l'aperçu (67,01 €/h, 2 %) |
+| Aperçu serveur | `POST /api/v1/pricing/calculate` : rien n'est enregistré ; anti-rebond de 350 ms, requête précédente annulée (`AbortController`), réponse périmée ignorée (`X-Request-Seq` renvoyé) ; `affects_strategy: false` | test (en-tête renvoyé, aucune ligne écrite) ; navigateur |
+| Scénarios | 1 à 3 par simulation, duplication, scénario de référence, lignes de temps et de frais directs (40 au plus), modèles de temps indicatifs sur demande avec l'avertissement « pas une référence de marché » | tests (limite de 3, suppression du dernier refusée) |
+| Cycle de vie | Migration `0005_pricing` ; finalisation transactionnelle : scénarios tous calculables, contexte (coût horaire, `tv`, période, prix et volume de la prestation) et résultats **figés et chiffrés (D4)** ; la simulation active précédente de la prestation passe en `superseded` ; **au plus une simulation active par prestation garantie par la base** ; nouvelle version (un seul brouillon par famille), archivage, historique des versions ; 409 sur toute modification d'une version figée | tests (409, chiffrement `k1.gcm:` sans valeur en clair, contrainte unique, versions) |
+| Dérive | Indicateur calculé à la lecture si le coût horaire (scénarios qui suivent le profil) ou `tv` ont changé depuis la finalisation ; les valeurs figées ne bougent pas | test |
+| Isolation | Dépôt restreint à l'organisation, clés étrangères composites ; 404 identique à « inexistant » et journalisation pour une simulation, un scénario ou une prestation d'une autre agence (y compris via l'aperçu) | test d'isolation (8 accès refusés, aucune écriture) |
+| Interface | Liste avec filtres (actives, brouillons, remplacées et archivées) et écart au prix recommandé ; simulateur (paramètres, résultats en direct, alertes locales, bulles d'information, enregistrement explicite, finalisation confirmée) ; version figée en lecture seule avec bandeau, dérive et historique ; comparaison des scénarios ; résumé fixe sur mobile | parcours navigateur desktop et mobile : aucune erreur console, aucun défilement horizontal |
+| Démo | Lumen : « Site vitrine WordPress » finalisé (2 scénarios, prix actuel 3 200 € sous le prix recommandé) et un brouillon « Refonte de site » | test dédié |
+
+Une prestation supprimée laisse ses simulations figées lisibles (le contexte figé garde son nom, son prix et son volume). La réévaluation des recommandations après finalisation sera branchée au lot 5 (Stratégie).
+
+**Total : 182 tests, 2 013 assertions**, PHPStan niveau max sans erreur, aucun motif interdit.
+

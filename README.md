@@ -18,8 +18,9 @@ SaaS de pilotage stratégique et financier pour petites agences web et digitales
 | 3 — UX/UI | [docs/07-ux-ui.md](docs/07-ux-ui.md) · [prototype/](prototype/README.md) | Validé |
 | 4 — Lot 0 : socle | code `app/`, `tests/` | Validé |
 | 4 — Lot 1 : démo, authentification, vue d'ensemble, profil, onboarding | code `app/`, `tests/` | Validé |
-| **4 — Lot 2 : diagnostic** | code `app/`, `tests/` · [docs/08-questionnaire-v1.md](docs/08-questionnaire-v1.md) | Livré |
-| 4 — Lots 3 à 6 (modules) | — | À venir |
+| 4 — Lot 2 : diagnostic | code `app/`, `tests/` · [docs/08-questionnaire-v1.md](docs/08-questionnaire-v1.md) | Validé |
+| **4 — Lot 3 : pricing** | code `app/`, `tests/` | Livré |
+| 4 — Lots 4 à 6 (modules) | — | À venir |
 | 5 — Tests et déploiement | — | À venir |
 
 ## Stack

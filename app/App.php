@@ -9,6 +9,7 @@ use App\Application\CatalogService;
 use App\Application\DemoService;
 use App\Application\DiagnosticService;
 use App\Application\FinancialProfileService;
+use App\Application\PricingService;
 use App\Cron\CronRunner;
 use App\Cron\Jobs\PurgeDemoJob;
 use App\Cron\Jobs\PurgeRateLimitsJob;
@@ -19,6 +20,7 @@ use App\Infrastructure\Database\Connection;
 use App\Infrastructure\Repositories\DiagnosticRepository;
 use App\Infrastructure\Repositories\FinancialProfileRepository;
 use App\Infrastructure\Repositories\OrganizationRepository;
+use App\Infrastructure\Repositories\PricingRepository;
 use App\Infrastructure\Repositories\ServiceRepository;
 use App\Mail\CaptureTransport;
 use App\Mail\Mailer;
@@ -174,10 +176,20 @@ class App
         return $this->resolve('diagnostics', fn () => new DiagnosticService($this->diagnosticRepository(), $this->organizations(), $this->financialProfiles()));
     }
 
+    public function pricingRepository(): PricingRepository
+    {
+        return $this->resolve('pricing_repository', fn () => new PricingRepository($this->db(), $this->fieldCrypto(), $this->clock()));
+    }
+
+    public function pricing(): PricingService
+    {
+        return $this->resolve('pricing', fn () => new PricingService($this->pricingRepository(), $this->financialProfiles()));
+    }
+
     public function demos(): DemoService
     {
         return $this->resolve('demos', fn () => new DemoService(
-            $this->db(), $this->financialProfiles(), $this->serviceRepository(), $this->diagnostics(),
+            $this->db(), $this->financialProfiles(), $this->serviceRepository(), $this->diagnostics(), $this->pricing(),
             $this->rateLimiter(), $this->securityEvents(), $this->sessions(), $this->clock(),
         ));
     }
