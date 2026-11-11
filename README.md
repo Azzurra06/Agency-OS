@@ -16,8 +16,10 @@ SaaS de pilotage stratégique et financier pour petites agences web et digitales
 | Sécurité et confidentialité | [docs/04-securite.md](docs/04-securite.md) | Validé ; S2 (OpenSSL) pour le portfolio |
 | Roadmap portfolio / SaaS commercial | [docs/06-roadmap.md](docs/06-roadmap.md) | Adoptée |
 | 3 — UX/UI | [docs/07-ux-ui.md](docs/07-ux-ui.md) · [prototype/](prototype/README.md) | Validé |
-| **4 — Lot 0 : socle** | code `app/`, `tests/` | **Livré, en attente de validation** |
-| 4 — Lots 1 à 6 (modules) | — | À venir |
+| 4 — Lot 0 : socle | code `app/`, `tests/` | Validé |
+| **4 — Lot 1 : démo, authentification, vue d'ensemble, profil, onboarding** | code `app/`, `tests/` | Livré |
+| 4 — Lot 2 : diagnostic | [docs/08-questionnaire-v1.md](docs/08-questionnaire-v1.md) | Questionnaire à valider |
+| 4 — Lots 3 à 6 (modules) | — | À venir |
 | 5 — Tests et déploiement | — | À venir |
 
 ## Stack
@@ -66,7 +68,7 @@ php -S localhost:8000 -t public_html public_html/index.php
 ```bash
 php tools/check-forbidden.php           # motifs interdits
 vendor/bin/phpstan analyse              # analyse statique, niveau max
-vendor/bin/phpunit                      # 118 tests : unitaires, fonctionnels (MySQL/MariaDB), sécurité
+vendor/bin/phpunit                      # 156 tests : unitaires, fonctionnels (MySQL/MariaDB), sécurité
 ```
 
 Les mêmes vérifications s'exécutent sur GitHub Actions à chaque push (MariaDB 10.11 et MySQL 8.0), avec un audit des dépendances et une recherche de secrets.
