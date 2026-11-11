@@ -4,12 +4,20 @@ declare(strict_types=1);
 
 namespace App;
 
+use App\Application\AuthService;
+use App\Application\CatalogService;
+use App\Application\DemoService;
+use App\Application\FinancialProfileService;
 use App\Cron\CronRunner;
+use App\Cron\Jobs\PurgeDemoJob;
 use App\Cron\Jobs\PurgeRateLimitsJob;
 use App\Cron\Jobs\PurgeSecurityEventsJob;
 use App\Http\Kernel;
 use App\Http\Routes;
 use App\Infrastructure\Database\Connection;
+use App\Infrastructure\Repositories\FinancialProfileRepository;
+use App\Infrastructure\Repositories\OrganizationRepository;
+use App\Infrastructure\Repositories\ServiceRepository;
 use App\Mail\CaptureTransport;
 use App\Mail\Mailer;
 use App\Mail\NullTransport;
@@ -122,6 +130,46 @@ class App
         });
     }
 
+    public function organizations(): OrganizationRepository
+    {
+        return $this->resolve('organizations', fn () => new OrganizationRepository($this->db(), $this->clock()));
+    }
+
+    public function serviceRepository(): ServiceRepository
+    {
+        return $this->resolve('service_repository', fn () => new ServiceRepository($this->db(), $this->clock()));
+    }
+
+    public function financialProfiles(): FinancialProfileService
+    {
+        return $this->resolve('financial_profiles', fn () => new FinancialProfileService(
+            $this->db(),
+            new FinancialProfileRepository($this->db(), $this->fieldCrypto(), $this->clock()),
+            $this->organizations(),
+            $this->serviceRepository(),
+        ));
+    }
+
+    public function catalog(): CatalogService
+    {
+        return $this->resolve('catalog', fn () => new CatalogService($this->serviceRepository()));
+    }
+
+    public function auth(): AuthService
+    {
+        return $this->resolve('auth', fn () => new AuthService(
+            $this->db(), $this->passwords(), $this->rateLimiter(), $this->securityEvents(), $this->sessions(), $this->mailer(), $this->config, $this->clock(),
+        ));
+    }
+
+    public function demos(): DemoService
+    {
+        return $this->resolve('demos', fn () => new DemoService(
+            $this->db(), $this->financialProfiles(), $this->serviceRepository(),
+            $this->rateLimiter(), $this->securityEvents(), $this->sessions(), $this->clock(),
+        ));
+    }
+
     public function kernel(): Kernel
     {
         return $this->resolve('kernel', fn () => new Kernel($this, Routes::build($this)));
@@ -130,6 +178,7 @@ class App
     public function cronRunner(): CronRunner
     {
         return $this->resolve('cron_runner', fn () => new CronRunner($this->db(), $this->logger(), $this->securityEvents(), $this->clock(), [
+            new PurgeDemoJob($this->demos()),
             new PurgeRateLimitsJob($this->rateLimiter()),
             new PurgeSecurityEventsJob($this->securityEvents()),
         ]));
