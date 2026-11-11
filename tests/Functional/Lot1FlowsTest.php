@@ -15,6 +15,8 @@ use Tests\Support\RequestFactory;
 final class Lot1FlowsTest extends DatabaseTestCase
 {
     private const ORIGIN = ['Origin' => 'https://agency-os.test'];
+    private const TEST_PASSWORD = 'mot-de-passe-de-test-123';
+    private const WRONG_PASSWORD = 'faux-mot-de-passe';
 
     private function send(string $method, string $path, array $json = null, array $form = [], array $headers = []): Response
     {
@@ -70,13 +72,13 @@ final class Lot1FlowsTest extends DatabaseTestCase
 
     public function testLoginWithTestAccountAndOnboardingRedirect(): void
     {
-        $this->app->auth()->createTestAccount('claire@example.test', 'mot-de-passe-de-test-123', 'Agence Claire');
+        $this->app->auth()->createTestAccount('claire@example.test', self::TEST_PASSWORD, 'Agence Claire');
         $_SESSION = ['_csrf' => str_repeat('e', 64)];
-        $bad = $this->send('POST', '/connexion', form: ['_csrf' => str_repeat('e', 64), 'email' => 'claire@example.test', 'password' => 'faux-mot-de-passe']);
+        $bad = $this->send('POST', '/connexion', form: ['_csrf' => str_repeat('e', 64), 'email' => 'claire@example.test', 'password' => self::WRONG_PASSWORD]);
         self::assertSame('/connexion', $bad->header('Location'));
         self::assertSame('Identifiants invalides.', $_SESSION['_flash']['message']);
 
-        $ok = $this->send('POST', '/connexion', form: ['_csrf' => str_repeat('e', 64), 'email' => 'claire@example.test', 'password' => 'mot-de-passe-de-test-123']);
+        $ok = $this->send('POST', '/connexion', form: ['_csrf' => str_repeat('e', 64), 'email' => 'claire@example.test', 'password' => self::TEST_PASSWORD]);
         self::assertSame('/app', $ok->header('Location'));
         $_SESSION['_csrf'] = str_repeat('e', 64);
         self::assertSame('/app/bienvenue', $this->send('GET', '/app')->header('Location'), 'Onboarding non terminé : redirection.');
@@ -89,9 +91,9 @@ final class Lot1FlowsTest extends DatabaseTestCase
 
     public function testLoginRequiresCsrf(): void
     {
-        $this->app->auth()->createTestAccount('claire@example.test', 'mot-de-passe-de-test-123', 'Agence Claire');
+        $this->app->auth()->createTestAccount('claire@example.test', self::TEST_PASSWORD, 'Agence Claire');
         $_SESSION = ['_csrf' => str_repeat('e', 64)];
-        $response = $this->app->kernel()->handle(RequestFactory::make('POST', '/connexion', self::ORIGIN, '', ['email' => 'claire@example.test', 'password' => 'mot-de-passe-de-test-123']));
+        $response = $this->app->kernel()->handle(RequestFactory::make('POST', '/connexion', self::ORIGIN, '', ['email' => 'claire@example.test', 'password' => self::TEST_PASSWORD]));
         self::assertSame(403, $response->status);
         self::assertArrayNotHasKey('user_id', $_SESSION);
     }
@@ -138,7 +140,7 @@ final class Lot1FlowsTest extends DatabaseTestCase
 
     public function testPasswordResetLinkIsRemovedFromUrl(): void
     {
-        $this->app->auth()->createTestAccount('claire@example.test', 'mot-de-passe-de-test-123', 'Agence Claire');
+        $this->app->auth()->createTestAccount('claire@example.test', self::TEST_PASSWORD, 'Agence Claire');
         $this->app->auth()->requestPasswordReset('claire@example.test', '203.0.113.60');
         $files = glob($this->app->config->storagePath('mail-capture') . '/*.json') ?: [];
         preg_match('#/reinitialisation/([0-9a-f]{64})#', (string) file_get_contents($files[0]), $m);
@@ -149,9 +151,13 @@ final class Lot1FlowsTest extends DatabaseTestCase
         self::assertSame('no-referrer', $exchange->header('Referrer-Policy'));
         self::assertSame(200, $this->send('GET', '/reinitialisation')->status);
 
-        $done = $this->send('POST', '/reinitialisation', form: ['_csrf' => (string) $_SESSION['_csrf'], 'password' => 'nouveau-mot-de-passe-456', 'password_confirmation' => 'nouveau-mot-de-passe-456']);
+        $newPassword = bin2hex(random_bytes(10)); // généré à l'exécution : aucun mot de passe littéral dans le dépôt
+        $form = ['_csrf' => (string) $_SESSION['_csrf']];
+        $form['password'] = $newPassword;
+        $form['password_confirmation'] = $newPassword;
+        $done = $this->send('POST', '/reinitialisation', form: $form);
         self::assertSame('/connexion', $done->header('Location'));
-        self::assertSame('ok', $this->app->auth()->attempt('claire@example.test', 'nouveau-mot-de-passe-456', '203.0.113.61', null));
+        self::assertSame('ok', $this->app->auth()->attempt('claire@example.test', $newPassword, '203.0.113.61', null));
     }
 
     public function testPagesEscapeUserProvidedText(): void
