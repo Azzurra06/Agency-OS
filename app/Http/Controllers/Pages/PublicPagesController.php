@@ -26,11 +26,6 @@ final class PublicPagesController
         ], 'layouts/minimal'));
     }
 
-    public function comingSoon(Request $request): Response
-    {
-        return Response::html(View::render('pages/coming-soon', ['title' => 'Connexion'], 'layouts/minimal'));
-    }
-
     public function demoExpired(Request $request): Response
     {
         return Response::html(View::render('pages/demo-expired', ['title' => 'Démonstration expirée'], 'layouts/minimal'));

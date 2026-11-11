@@ -151,9 +151,7 @@ final class FinancialProfileService
             'billable_hours' => $this->calculator->billableHours($p)->toArray(),
             'hourly_cost' => $this->calculator->hourlyCost($p)->toArray(),
             'monthly_capacity' => $this->calculator->monthlyCapacity($p)->toArray(),
-            'revenue_target' => $p->revenueTarget === null ? null : [
-                'value' => $p->revenueTarget->toFixed(2), 'year' => $p->revenueTargetYear, 'nature' => 'declared',
-            ],
+            'revenue_target' => $this->targetProgress($p),
             'recurring_share_declared' => $p->recurringShareDeclared === null ? null : [
                 'value' => $p->recurringShareDeclared->mul(Decimal::of('100'))->toFixed(2), 'nature' => 'declared',
             ],
@@ -186,6 +184,27 @@ final class FinancialProfileService
             'revenue_target' => $money($p->revenueTarget), 'revenue_target_year' => $p->revenueTargetYear,
             'recurring_share_declared' => $pct($p->recurringShareDeclared),
         ];
+    }
+
+    /**
+     * Objectif déclaré comparé au CA de référence annualisé : progression (plafonnée à 100 %) et écart restant.
+     *
+     * @return array{value: string, year: int|null, nature: string, progress_pct: string|null, gap: string|null}|null
+     */
+    private function targetProgress(FinancialProfileData $p): ?array
+    {
+        if ($p->revenueTarget === null) {
+            return null;
+        }
+        $revenue = $this->calculator->annualizedRevenue($p)->value;
+        $progress = null;
+        $gap = null;
+        if ($revenue !== null && $p->revenueTarget->isPositive()) {
+            $progress = $revenue->div($p->revenueTarget)->mul(Decimal::of('100'))->min(Decimal::of('100'))->toFixed(0);
+            $gap = $p->revenueTarget->sub($revenue)->max(Decimal::zero())->toFixed(2);
+        }
+
+        return ['value' => $p->revenueTarget->toFixed(2), 'year' => $p->revenueTargetYear, 'nature' => 'declared', 'progress_pct' => $progress, 'gap' => $gap];
     }
 
     private function assertCoherent(FinancialProfileData $p): void

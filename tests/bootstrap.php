@@ -31,4 +31,5 @@ if (is_file($base . '/vendor/autoload.php')) {
 }
 
 require_once $base . '/app/Support/helpers.php';
+require_once $base . '/app/Support/ui.php';
 date_default_timezone_set('UTC');

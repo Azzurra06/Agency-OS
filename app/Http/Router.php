@@ -16,9 +16,9 @@ final class Router
     /**
      * @param callable(Request): Response $handler
      */
-    public function add(string $method, string $pattern, callable $handler, string $access, bool $allowDemo = true): void
+    public function add(string $method, string $pattern, callable $handler, string $access, bool $allowDemo = true, bool $startsSession = false): void
     {
-        $this->routes[] = new Route(strtoupper($method), $pattern, $handler, $access, $allowDemo);
+        $this->routes[] = new Route(strtoupper($method), $pattern, $handler, $access, $allowDemo, $startsSession);
     }
 
     /**

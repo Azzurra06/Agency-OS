@@ -87,6 +87,7 @@ final class Kernel
         $cookies = $request->header('cookie') ?? '';
 
         return !$route->isPublic()
+            || $route->startsSession
             || !CsrfGuard::isSafeMethod($request->method)
             || str_contains($cookies, $this->app->sessions()->cookieName() . '=');
     }

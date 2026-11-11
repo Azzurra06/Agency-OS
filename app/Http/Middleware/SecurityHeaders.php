@@ -32,7 +32,8 @@ final class SecurityHeaders implements Middleware
             ->withHeader('Content-Security-Policy', self::CSP)
             ->withHeader('X-Content-Type-Options', 'nosniff')
             ->withHeader('X-Frame-Options', 'DENY')
-            ->withHeader('Referrer-Policy', 'strict-origin-when-cross-origin')
+            // Une politique plus stricte posée par le contrôleur (no-referrer sur les pages à jeton) est conservée.
+            ->withHeader('Referrer-Policy', $response->header('Referrer-Policy') === 'no-referrer' ? 'no-referrer' : 'strict-origin-when-cross-origin')
             ->withHeader('Cross-Origin-Opener-Policy', 'same-origin')
             ->withHeader('Cross-Origin-Resource-Policy', 'same-origin')
             ->withHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()')

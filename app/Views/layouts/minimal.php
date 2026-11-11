@@ -10,7 +10,9 @@
   <link rel="stylesheet" href="/assets/css/tokens.css">
   <link rel="stylesheet" href="/assets/css/base.css">
   <link rel="stylesheet" href="/assets/css/components.css">
-  <link rel="stylesheet" href="/assets/css/public.css">
+  <link rel="stylesheet" href="/assets/css/layout.css">
+  <link rel="stylesheet" href="/assets/css/app.css">
+  <script src="/assets/js/app.js" type="module"></script>
 </head>
 <body>
   <a class="skip-link" href="#contenu">Aller au contenu</a>

@@ -25,7 +25,7 @@ $rules = [
     ['app,bin,public_html', '/\b(md5|sha1)\s*\(/', 'Hachage faible interdit pour la sécurité (utiliser hash(\'sha256\') ou password_hash)', []],
     ['app,bin,public_html', '/\brand\s*\(|\bmt_rand\s*\(|\buniqid\s*\(/', 'Aléa non cryptographique : utiliser random_bytes/random_int', []],
     // Vues : toute sortie passe par e(), attr() ou json_script()
-    ['app/Views', '/<\?=\s*+(?!e\(|attr\(|json_script\()(?!\$content \/\* contenu déjà rendu)/', 'Sortie non échappée dans une vue', []],
+    ['app/Views', '/<\?=\s*+(?!e\(|attr\(|json_script\(|ui_[a-z_]+\()(?!\$content \/\* contenu déjà rendu)/', 'Sortie non échappée dans une vue', []],
     // JavaScript : aucun sink XSS
     ['public_html/assets/js,prototype/assets/js', '/\.(innerHTML|outerHTML)\s*=|insertAdjacentHTML\s*\(|document\.write\s*\(/', 'Sink XSS interdit : utiliser textContent et le DOM', []],
     ['public_html/assets/js,prototype/assets/js', '/\beval\s*\(|new\s+Function\s*\(|setTimeout\s*\(\s*["\']/', 'Exécution de code dynamique interdite', []],

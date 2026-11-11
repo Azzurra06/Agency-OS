@@ -216,7 +216,7 @@ final class KernelTest extends DatabaseTestCase
         $response = $this->app->kernel()->handle(RequestFactory::make('GET', '/'));
         self::assertSame(200, $response->status);
         self::assertStringContainsString('données fictives', $response->body);
-        self::assertStringNotContainsString('<script', $response->body);
+        self::assertDoesNotMatchRegularExpression('/<script(?![^>]*\bsrc=)/', $response->body, 'Aucun script intégré à la page (CSP).');
         self::assertSame('noindex, nofollow, noarchive', $response->header('X-Robots-Tag'), 'Hors production : pas d\'indexation.');
     }
 }

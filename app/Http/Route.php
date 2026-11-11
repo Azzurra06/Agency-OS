@@ -28,6 +28,7 @@ final class Route
         private readonly mixed $handler,
         public readonly string $access,
         public readonly bool $allowDemo = true,
+        public readonly bool $startsSession = false,
     ) {
         if ($access === '') {
             throw new InvalidArgumentException(sprintf('La route %s %s ne déclare aucun niveau d\'accès.', $method, $pattern));

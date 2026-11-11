@@ -51,8 +51,8 @@
 | Phase 1 | Cadrage | `01-cadrage.md` | ✅ validé |
 | Phase 2 | Architecture, formules, sécurité, architecture détaillée | `02` à `05` | ✅ validé (S2 : OpenSSL pour le portfolio) |
 | Phase 3 | UX/UI : design system, composants, écrans, états, bulles d'information | `07-ux-ui.md` et prototype statique (`prototype/`) | ✅ validé |
-| **Phase 4, lot 0** | **Socle** : bootstrap et configuration, profils `portfolio`/`production`, PDO, migrations, `Decimal`, middlewares de sécurité (en-têtes, session, CSRF, authentification, contexte d'organisation, limitation des tentatives), dépôts restreints à l'organisation, `FieldCrypto`, journalisation, `Mailer` en capture, exécuteur cron, CI | code et tests (§5) | ⏳ livré, à valider |
-| Phase 4, lot 1 | Démo (création, quotas, expiration, purge), authentification complète (comptes de test), layout, dashboard squelette, profil et onboarding | — | — |
+| Phase 4, lot 0 | Socle : bootstrap et configuration, profils `portfolio`/`production`, PDO, migrations, `Decimal`, middlewares de sécurité (en-têtes, session, CSRF, authentification, contexte d'organisation, limitation des tentatives), dépôts restreints à l'organisation, `FieldCrypto`, journalisation, `Mailer` en capture, exécuteur cron, CI | code et tests (§5) | ✅ validé |
+| **Phase 4, lot 1** | Démo (création, quotas, expiration, purge), authentification complète (comptes de test), layout, vue d'ensemble, profil et onboarding | code et tests (§6) | ⏳ livré, à valider |
 | Phase 4, lot 2 | Diagnostic (questionnaire v1, scoring, résultats partiels) | — | — |
 | Phase 4, lot 3 | Pricing (simulateur, aperçus, finalisation, versions) | — | — |
 | Phase 4, lot 4 | Revenus récurrents (offres, contrats, scénarios, projections) | — | — |
@@ -86,3 +86,15 @@
 | Qualité | PHPStan **niveau max sans erreur** ; `tools/check-forbidden.php` (SQL concaténé, sinks XSS, sorties non échappées, fonctions dangereuses, aléa faible) | CI GitHub Actions : MariaDB 10.11 et MySQL 8.0, audit Composer, gitleaks |
 
 **Total : 118 tests, 1 027 assertions, tous verts en local** (PHP 8.3, MariaDB 10.11).
+
+## 6. Lot 1 : ce qui a été livré (11/11/2026)
+
+| Exigence | Mise en œuvre | Vérification |
+|---|---|---|
+| Profil financier | Migration `0003_finance` ; `FinancialCalculator` (période et annualisation, résultat estimé avec inclus/exclus, coût horaire, capacité, taux de charges variables générales, complétude) ; montants **chiffrés** en base ; journal des seules modifications réelles (valeurs chiffrées) | cas PER-1, RES-1, HC-1 à HC-3 ; aucun montant en clair en base ; valeur recopiée vers une autre agence refusée |
+| Démo | Espace « Agence Lumen » fictif et isolé, 24 h, 5 par IP et par heure, 500 actives, quota de prestations, réinitialisation sans prolonger l'expiration, purge horaire et de secours, suppression vérifiée table par table | 6 tests ; parcours complet dans le navigateur |
+| Authentification | Connexion à temps constant, limitation email+IP/email/IP, blocage même avec le bon mot de passe ; mot de passe oublié (jeton à usage unique de 30 min, retiré de l'URL, `no-referrer`) ; vérification de l'email (24 h, renvois limités) ; comptes de test en ligne de commande | 8 tests ; correction d'un défaut détecté : l'en-tête global écrasait `no-referrer` |
+| Interface | Layout (sidebar, barre d'onglets mobile, bandeau démo avec compte à rebours) ; vue d'ensemble (résultat estimé, objectif, repères de production, complétude, états vides pour les modules à venir) ; onboarding en 3 étapes passables ; paramètres Agence / Finances / Prestations ; bulles d'information cliquables | parcours navigateur desktop et mobile, sans défilement horizontal ni violation CSP |
+| API | `organization`, `financial-profile` (+ `derived`, `changes`), `services` ; décimaux en chaînes, taux en pourcentage, liste blanche | 422 sur nombre JSON ou champ inconnu, 400 sur JSON invalide, 404 et journalisation sur une prestation d'une autre agence |
+
+**Total : 156 tests, 1 495 assertions**, PHPStan niveau max sans erreur, aucun motif interdit.

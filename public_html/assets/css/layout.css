@@ -1,0 +1,47 @@
+/* ==========================================================================
+   Structure de l'application : bandeau démo, sidebar, contenu, barre d'onglets
+   ========================================================================== */
+.app { display: grid; grid-template-columns: var(--sidebar-width) minmax(0, 1fr); min-height: calc(100vh - var(--banner-height)); }
+
+.sidebar { position: sticky; top: var(--banner-height); height: calc(100vh - var(--banner-height)); display: flex; flex-direction: column; gap: var(--space-5); padding: var(--space-5) var(--space-3); border-right: 1px solid var(--color-border); background: var(--color-surface); }
+.brand { display: flex; align-items: center; gap: var(--space-3); padding: 0 var(--space-2); text-decoration: none; color: var(--color-text); }
+.brand__mark { display: grid; place-items: center; width: 32px; height: 32px; border-radius: var(--radius-md); background: var(--color-accent); color: var(--color-text-inverse); font-family: var(--font-heading); font-weight: 700; font-size: 14px; flex: none; }
+.brand__name { font-family: var(--font-heading); font-weight: 700; font-size: 1rem; letter-spacing: -0.01em; }
+.org-switch { display: flex; flex-direction: column; gap: 2px; padding: var(--space-2) var(--space-3); border: 1px solid var(--color-border); border-radius: var(--radius-md); }
+.org-switch__name { font-weight: 500; font-size: var(--text-small); }
+.nav { display: flex; flex-direction: column; gap: 2px; }
+.nav__link { display: flex; align-items: center; gap: var(--space-3); min-height: 38px; padding: 0 var(--space-3); border-radius: var(--radius-md); color: var(--color-text-secondary); font-weight: 500; text-decoration: none; }
+.nav__link:hover { background: var(--color-surface-sunken); color: var(--color-text); }
+.nav__link[aria-current="page"] { background: var(--color-accent-subtle); color: var(--color-accent-text); }
+.sidebar__bottom { margin-top: auto; display: flex; flex-direction: column; gap: 2px; }
+
+.main { min-width: 0; }
+.page { max-width: var(--content-max); margin: 0 auto; padding: var(--space-7) var(--space-7) var(--space-9); display: flex; flex-direction: column; gap: var(--space-6); }
+.page-header { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; }
+.page-header__titles { display: flex; flex-direction: column; gap: var(--space-1); }
+.page-header__sub { color: var(--color-text-secondary); }
+.period-pill { display: inline-flex; align-items: center; flex-wrap: wrap; gap: var(--space-1) var(--space-2); min-height: 32px; padding: var(--space-1) var(--space-3); border: 1px solid var(--color-border); border-radius: var(--radius-full); font-size: var(--text-small); color: var(--color-text-secondary); background: var(--color-surface); }
+
+.tabbar { display: none; }
+
+/* Tablette : sidebar repliée en icônes */
+@media (max-width: 1023px) {
+  .app { grid-template-columns: var(--sidebar-width-collapsed) minmax(0, 1fr); }
+  .sidebar { padding: var(--space-4) var(--space-2); align-items: center; }
+  .brand__name, .org-switch, .nav__label { display: none; }
+  .nav__link { justify-content: center; padding: 0; width: 44px; min-height: 44px; }
+  .page { padding: var(--space-6) var(--space-5) var(--space-8); }
+}
+
+/* Mobile : une colonne, barre d'onglets en bas */
+@media (max-width: 767px) {
+  .app { display: block; }
+  .sidebar { display: none; }
+  .page { padding: var(--space-5) var(--space-4) calc(var(--tabbar-height) + var(--space-6)); gap: var(--space-5); }
+  .tabbar { position: fixed; z-index: 40; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: repeat(5, 1fr); height: var(--tabbar-height); padding-bottom: env(safe-area-inset-bottom); background: var(--color-surface); border-top: 1px solid var(--color-border); }
+  .tabbar__link { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 44px; font-size: 11px; font-weight: 500; color: var(--color-text-tertiary); text-decoration: none; }
+  .tabbar__link[aria-current="page"] { color: var(--color-accent-text); }
+  .demo-banner { font-size: var(--text-micro); }
+  .demo-banner__actions .btn__label { display: none; }
+  .input, .select { font-size: 16px; }
+}

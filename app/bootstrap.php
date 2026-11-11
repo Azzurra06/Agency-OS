@@ -24,6 +24,7 @@ if (is_file(AGENCY_OS_BASE . '/vendor/autoload.php')) {
 }
 
 require_once AGENCY_OS_BASE . '/app/Support/helpers.php';
+require_once AGENCY_OS_BASE . '/app/Support/ui.php';
 
 // Durcissement indépendant de la configuration partagée de l'hébergement (docs/04-securite.md §6.3).
 ini_set('display_errors', '0');
