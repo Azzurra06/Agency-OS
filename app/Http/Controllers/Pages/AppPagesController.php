@@ -9,15 +9,10 @@ use App\Http\Request;
 use App\Http\Response;
 
 /**
- * Écrans de l'application : vue d'ensemble, onboarding, paramètres. Le module stratégie
- * arrive aux lots suivants (page d'attente).
+ * Écrans de l'application : vue d'ensemble, onboarding, paramètres.
  */
 final class AppPagesController extends Controller
 {
-    private const MODULES = [
-        'strategie' => ['Stratégie', 'target', 5, 'Recevez des recommandations priorisées et suivez votre plan d\'action.'],
-    ];
-
     public function dashboard(Request $request): Response
     {
         $org = $this->org($request);
@@ -32,6 +27,7 @@ final class AppPagesController extends Controller
             'diagnostic' => $this->app->diagnostics()->overview($org),
             'recurring' => $this->app->recurring()->summary($org),
             'hasOffers' => $this->app->recurringRepository()->offers($org) !== [],
+            'strategy' => $this->app->strategy()->overview($org),
         ]);
     }
 
@@ -70,13 +66,5 @@ final class AppPagesController extends Controller
             'tab' => 'prestations',
             'services' => $this->app->serviceRepository()->all($this->org($request)),
         ]);
-    }
-
-    public function module(Request $request): Response
-    {
-        $key = trim(substr($request->path, strlen('/app/')), '/');
-        [$label, $icon, $lot, $promise] = self::MODULES[$key] ?? self::MODULES['strategie'];
-
-        return $this->screen($request, 'app/module-soon', $key, $label, ['moduleLabel' => $label, 'moduleIcon' => $icon, 'lot' => $lot, 'promise' => $promise]);
     }
 }

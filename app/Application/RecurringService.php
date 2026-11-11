@@ -22,6 +22,8 @@ use LogicException;
  *
  * @phpstan-import-type OfferRow from RecurringRepository
  * @phpstan-import-type ScenarioRow from RecurringRepository
+ * @phpstan-type Economics array{monthly_price: string, monthly_cost: string|null, monthly_result: string|null, margin_on_price_pct: string|null, floor_price: string|null, hourly_cost: string|null, variable_rate_pct: string|null, unprofitable: bool}
+ * @phpstan-type OfferView array{public_id: string, name: string, kind: string, billing_period: string, price: string, hours_per_month: string, external_costs_per_month: string, active_contracts: int, contracts_updated_at: string|null, is_active: bool, items: list<string>, mrr: string, economics: Economics}
  * @phpstan-type Inputs array{hourly_cost: DerivedValue, variable_rate: DerivedValue, period: string|null, annualized_revenue: DerivedValue, monthly_capacity: DerivedValue, declared_share: Decimal|null}
  */
 final class RecurringService
@@ -62,7 +64,7 @@ final class RecurringService
     /**
      * Formules avec leur économie par contrat (calculée en direct avec le coût horaire et tv du profil).
      *
-     * @return list<array<string, mixed>>
+     * @return list<OfferView>
      */
     public function offers(OrgId $org): array
     {
@@ -71,7 +73,7 @@ final class RecurringService
         return array_map(fn (array $o): array => $this->offerView($o, $inputs), $this->repository->offers($org));
     }
 
-    /** @return array<string, mixed>|null */
+    /** @return OfferView|null */
     public function offer(OrgId $org, string $publicId): ?array
     {
         $offer = $this->repository->offer($org, $publicId);
@@ -472,7 +474,7 @@ final class RecurringService
     /**
      * @param OfferRow|array{id: int, public_id: string, name: string, kind: string, billing_period: string, price: string, hours_per_month: string, external_costs_per_month: string, active_contracts: int, contracts_updated_at: string|null, is_active: bool, items: list<string>} $o
      * @param Inputs $inputs
-     * @return array<string, mixed>
+     * @return OfferView
      */
     private function offerView(array $o, array $inputs): array
     {

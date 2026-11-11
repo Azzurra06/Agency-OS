@@ -49,6 +49,7 @@ final class DemoService
         private readonly DiagnosticService $diagnostics,
         private readonly PricingService $pricing,
         private readonly RecurringService $recurring,
+        private readonly StrategyService $strategy,
         private readonly RateLimiter $limiter,
         private readonly SecurityEventLogger $events,
         private readonly SessionManager $sessions,
@@ -114,7 +115,7 @@ final class DemoService
     public function reset(OrgId $org, int $userId): void
     {
         $this->db->transaction(function () use ($org): void {
-            foreach (['recurring_scenarios', 'recurring_offers', 'pricing_simulations', 'diagnostics', 'financial_profile_changes', 'financial_profiles', 'services'] as $table) {
+            foreach (['action_plans', 'recommendations', 'recurring_scenarios', 'recurring_offers', 'pricing_simulations', 'diagnostics', 'financial_profile_changes', 'financial_profiles', 'services'] as $table) {
                 $this->db->run("DELETE FROM {$table} WHERE organization_id = :org", ['org' => $org->value]);
             }
             $this->db->run(
@@ -198,6 +199,19 @@ final class DemoService
             $this->diagnostics->answer($org, $draft['public_id'], ['question' => $question, 'option' => $option]);
         }
         $this->diagnostics->complete($org, $draft['public_id']);
+
+        // Stratégie : évaluation des règles sur les données fictives, une recommandation acceptée avec une sous-action faite.
+        $this->strategy->evaluate($org);
+        $first = $this->strategy->list($org, 'new')['items'][0] ?? null;
+        if (is_array($first) && is_string($first['public_id'] ?? null)) {
+            $action = $this->strategy->accept($org, $first['public_id']);
+            $this->strategy->updateAction($org, $action, ['status' => 'in_progress', 'due_date' => $this->clock->nowUtc()->modify('+30 days')->format('Y-m-d')]);
+            $tasks = $this->strategy->plan($org)['groups']['in_progress'][0]['tasks'] ?? [];
+            if (is_array($tasks) && is_array($tasks[0] ?? null) && is_string($tasks[0]['public_id'] ?? null)) {
+                $this->strategy->updateTask($org, $tasks[0]['public_id'], ['is_done' => true]);
+            }
+        }
+        $this->strategy->createAction($org, ['title' => 'Présenter la nouvelle grille tarifaire à l\'équipe', 'due_date' => $this->clock->nowUtc()->modify('+14 days')->format('Y-m-d')]);
     }
 
     /**

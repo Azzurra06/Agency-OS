@@ -73,7 +73,12 @@ final class Kernel
             new CsrfProtection($this->app->csrf(), $this->app->securityEvents()),
             new Authenticate($this->app->identities(), $this->app->securityEvents(), $this->app->clock()),
         ];
-        $handler = static fn (Request $r): Response => $route->handle($r);
+        $handler = function (Request $r) use ($route): Response {
+            $response = $route->handle($r);
+            $this->reevaluateStrategy($r, $response);
+
+            return $response;
+        };
         foreach (array_reverse($pipeline) as $middleware) {
             $next = $handler;
             $handler = static fn (Request $r): Response => $middleware->process($r, $next);
@@ -81,6 +86,25 @@ final class Kernel
 
         return $handler($request);
     }
+
+    /**
+     * Réévaluation des recommandations après un enregistrement RÉUSSI qui change les faits (docs/01 §12, décision 7) :
+     * profil, organisation, catalogue, simulation finalisée ou archivée, formules et contrats, diagnostic terminé.
+     * L'enregistrement d'un brouillon (scénario de prix, scénario récurrent, réponse au diagnostic) ne déclenche rien.
+     */
+    private function reevaluateStrategy(Request $request, Response $response): void
+    {
+        if (CsrfGuard::isSafeMethod($request->method) || $response->status >= 300) {
+            return;
+        }
+        $org = $request->attribute('org');
+        if ($org instanceof \App\Infrastructure\Database\OrgId && preg_match(self::STRATEGY_TRIGGERS, $request->path) === 1) {
+            $this->app->strategy()->evaluate($org);
+        }
+    }
+
+    private const STRATEGY_TRIGGERS = '#^/api/v1/(financial-profile(/recurring-share/accept-computed)?$|organization(/onboarding)?$|services(/[^/]+)?$'
+        . '|pricing/simulations/[^/]+/(finalize|archive)$|recurring/offers(/[^/]+(/contracts)?)?$|diagnostics/[^/]+/complete$)#';
 
     private function needsSession(Request $request, Route $route): bool
     {

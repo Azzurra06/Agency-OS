@@ -4,6 +4,7 @@
 /** @var bool $isDemo */
 /** @var array{mrr: string, arr: string, coverage_pct: string|null} $recurring */
 /** @var bool $hasOffers */
+/** @var array{top: list<array{title: string, rule_code: string, priority_label: string, impact_kind: string, impact_amount: string|null}>, progress: array{done: int, total: int, pct: int}} $strategy */
 /** @var array{draft: array{dimensions_done: int, dimensions: int}|null, latest: array{public_id: string, completed_at: string, global_display: string|null, level: string|null, reliability_label: string|null}|null} $diagnostic */
 use App\Support\FinanceFields;
 use App\Support\Format;
@@ -133,16 +134,33 @@ $hourlyLabel = $hourly['assumptions'] === [] ? 'Calculé' : sprintf('Calculé, %
 
 <div class="dash-grid">
   <section class="card" aria-labelledby="t-prio">
-    <div class="card__header"><div class="card__title"><h2 id="t-prio">Priorités</h2><?= ui_tip('tip-prio', 'Priorités', 'D\'où viendront les priorités ?', 'Des règles métier analyseront vos données (profil, diagnostic, simulations finalisées, offres). Chaque recommandation indiquera les données sur lesquelles elle repose.') ?></div></div>
-    <div class="empty">
-      <span class="empty__icon"><?= ui_icon('target') ?></span>
-      <h3>Bientôt vos recommandations</h3>
-      <p class="empty__text text-small">Elles apparaîtront ici une fois le diagnostic et les simulations disponibles.</p>
+    <div class="card__header">
+      <div class="card__title"><h2 id="t-prio">Priorités</h2><?= ui_tip('tip-prio', 'Priorités', 'D\'où viennent les priorités ?', 'Un moteur de règles analyse votre profil, votre dernier diagnostic, vos simulations finalisées et vos formules récurrentes. Chaque recommandation indique les données sur lesquelles elle repose.') ?></div>
+      <a class="text-small" href="/app/strategie">Toutes les recommandations</a>
+    </div>
+    <?php if ($strategy['top'] === []): ?>
+      <div class="empty">
+        <span class="empty__icon"><?= ui_icon('target') ?></span>
+        <h3>Aucune recommandation nouvelle</h3>
+        <p class="empty__text text-small">Complétez votre profil, finalisez vos simulations de prix et faites le diagnostic pour des recommandations plus précises.</p>
+      </div>
+    <?php else: ?>
+      <div class="dash-recos">
+        <?php foreach ($strategy['top'] as $r): ?>
+          <div class="dash-reco">
+            <div class="stack stack--sm"><a href="/app/strategie"><?= e($r['title']) ?></a><span class="text-micro text-tertiary">Priorité <?= e($r['priority_label']) ?><?= e($r['impact_kind'] === 'quantified' && $r['impact_amount'] !== null ? ' · impact ' . trim(Format::money($r['impact_amount'], 0) . ' ' . \App\Domain\Strategy\RuleCatalog::impactUnit($r['rule_code'])) : '') ?></span></div>
+          </div>
+        <?php endforeach; ?>
+      </div>
+    <?php endif; ?>
+    <div class="stack stack--sm dash-plan">
+      <div class="cluster cluster--between"><span class="text-small">Plan d'action</span><a class="text-small num" href="/app/strategie/plan"><?= e($strategy['progress']['done'] . ' / ' . $strategy['progress']['total'] . ' actions terminées') ?></a></div>
+      <div class="progress progress--success"><span class="progress__bar" data-value="<?= attr($strategy['progress']['pct']) ?>"></span></div>
     </div>
   </section>
 
   <section class="card" aria-labelledby="t-marks">
-    <div class="card__header"><div class="card__title"><h2 id="t-marks">Repères de production</h2><?= ui_tip('tip-marks', 'Repères de production', 'Repères de production', 'Calculés à partir de votre profil financier. Ils alimenteront le simulateur de prix.', [], 'end') ?></div></div>
+    <div class="card__header"><div class="card__title"><h2 id="t-marks">Repères de production</h2><?= ui_tip('tip-marks', 'Repères de production', 'Repères de production', 'Calculés à partir de votre profil financier. Ils alimentent le simulateur de prix et les formules récurrentes.', [], 'end') ?></div></div>
     <div class="result-list">
       <div class="result-line">
         <span class="result-line__label">Coût horaire complet <?= ui_tip('tip-hourly', 'Coût horaire', 'Coût horaire complet', '(Charges fixes + coût des salariés + rémunération du dirigeant) ÷ heures facturables annuelles.') ?></span>

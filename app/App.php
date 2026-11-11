@@ -11,6 +11,7 @@ use App\Application\DiagnosticService;
 use App\Application\FinancialProfileService;
 use App\Application\PricingService;
 use App\Application\RecurringService;
+use App\Application\StrategyService;
 use App\Cron\CronRunner;
 use App\Cron\Jobs\PurgeDemoJob;
 use App\Cron\Jobs\PurgeRateLimitsJob;
@@ -24,6 +25,7 @@ use App\Infrastructure\Repositories\OrganizationRepository;
 use App\Infrastructure\Repositories\PricingRepository;
 use App\Infrastructure\Repositories\RecurringRepository;
 use App\Infrastructure\Repositories\ServiceRepository;
+use App\Infrastructure\Repositories\StrategyRepository;
 use App\Mail\CaptureTransport;
 use App\Mail\Mailer;
 use App\Mail\NullTransport;
@@ -198,10 +200,23 @@ class App
         return $this->resolve('recurring', fn () => new RecurringService($this->recurringRepository(), $this->financialProfiles()));
     }
 
+    public function strategyRepository(): StrategyRepository
+    {
+        return $this->resolve('strategy_repository', fn () => new StrategyRepository($this->db(), $this->fieldCrypto(), $this->clock()));
+    }
+
+    public function strategy(): StrategyService
+    {
+        return $this->resolve('strategy', fn () => new StrategyService(
+            $this->strategyRepository(), $this->financialProfiles(), $this->serviceRepository(), $this->pricing(), $this->recurring(),
+            $this->diagnosticRepository(), $this->organizations(), $this->clock(),
+        ));
+    }
+
     public function demos(): DemoService
     {
         return $this->resolve('demos', fn () => new DemoService(
-            $this->db(), $this->financialProfiles(), $this->serviceRepository(), $this->diagnostics(), $this->pricing(), $this->recurring(),
+            $this->db(), $this->financialProfiles(), $this->serviceRepository(), $this->diagnostics(), $this->pricing(), $this->recurring(), $this->strategy(),
             $this->rateLimiter(), $this->securityEvents(), $this->sessions(), $this->clock(),
         ));
     }

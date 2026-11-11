@@ -187,6 +187,11 @@ final class FinancialProfileService
         ];
     }
 
+    public function updatedAt(OrgId $org): ?string
+    {
+        return $this->profiles->updatedAt($org);
+    }
+
     /**
      * Données saisies, sérialisées pour les formulaires (taux en pourcentage, décimaux en chaînes).
      *

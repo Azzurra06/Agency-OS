@@ -325,6 +325,64 @@ final class PricingService
     }
 
     /**
+     * Simulations ACTIVES (finalisées) par prestation, pour le moteur de règles : prix plancher et prix recommandé
+     * EXACTS du scénario de référence, recalculés à partir des entrées figées (même calc_version : résultat identique
+     * aux valeurs figées arrondies), et dérive > 5 % du coût horaire ou de tv par rapport au profil actuel.
+     *
+     * @return array<string, array{public_id: string, version: int, finalized_at: string, floor: Decimal, recommended: Decimal, variable_rate: Decimal, drift: bool}>
+     */
+    public function activeReferences(OrgId $org): array
+    {
+        $inputs = $this->profiles->pricingInputs($org);
+        $out = [];
+        foreach ($this->repository->simulations($org) as $sim) {
+            if ($sim['status'] !== 'finalized' || $sim['service_public_id'] === null || $sim['finalized_at'] === null) {
+                continue;
+            }
+            foreach ($this->repository->scenarios($org, $sim['id']) as $s) {
+                if ($s['id'] !== $sim['reference_scenario_id']) {
+                    continue;
+                }
+                $frozen = $this->repository->frozenResults($org, $s['id'], $s['public_id']) ?? [];
+                $hourly = self::pick($frozen, 'inputs', 'exact', 'hourly_cost');
+                if ($hourly === null) {
+                    continue;
+                }
+                $tv = Decimal::of(self::pick($frozen, 'inputs', 'exact', 'variable_rate') ?? '0');
+                $lines = $s['lines'];
+                try {
+                    $result = $this->calculator->calculate(new ScenarioInput(
+                        Decimal::of($hourly), Decimal::of($s['contingency_rate']), Decimal::of($s['target_margin_rate']), $tv,
+                        array_values(array_map(static fn (array $l): Decimal => Decimal::of($l['hours'] ?? '0'), array_filter($lines, static fn (array $l): bool => $l['kind'] === 'time'))),
+                        array_values(array_map(static fn (array $l): Decimal => Decimal::of($l['amount'] ?? '0'), array_filter($lines, static fn (array $l): bool => $l['kind'] === 'direct_cost'))),
+                    ));
+                } catch (PricingException) {
+                    continue;
+                }
+                $relative = static function (?Decimal $current, Decimal $frozenValue): bool {
+                    if ($current === null) {
+                        return false;
+                    }
+                    if ($frozenValue->isZero()) {
+                        return !$current->isZero();
+                    }
+                    $diff = $current->sub($frozenValue)->div($frozenValue);
+
+                    return ($diff->isNegative() ? $diff->negate() : $diff)->compare(Decimal::of('0.05')) > 0;
+                };
+                $usesProfile = self::pick($frozen, 'inputs', 'hourly_cost', 'source') === 'profile';
+                $out[$sim['service_public_id']] = [
+                    'public_id' => $sim['public_id'], 'version' => $sim['version_number'], 'finalized_at' => $sim['finalized_at'],
+                    'floor' => $result->floorPrice, 'recommended' => $result->recommendedPrice, 'variable_rate' => $tv,
+                    'drift' => ($usesProfile && $relative($inputs['hourly_cost']->value, Decimal::of($hourly))) || $relative($inputs['variable_rate']->value, $tv),
+                ];
+            }
+        }
+
+        return $out;
+    }
+
+    /**
      * Liste : une ligne par simulation, avec le prix recommandé (figé, ou recalculé pour un brouillon) du scénario de référence.
      *
      * @return list<array<string, mixed>>

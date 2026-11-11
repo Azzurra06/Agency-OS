@@ -11,12 +11,14 @@ use App\Http\Controllers\Api\HealthController;
 use App\Http\Controllers\Api\OrganizationApiController;
 use App\Http\Controllers\Api\PricingApiController;
 use App\Http\Controllers\Api\RecurringApiController;
+use App\Http\Controllers\Api\StrategyApiController;
 use App\Http\Controllers\Api\ServicesApiController;
 use App\Http\Controllers\Pages\AppPagesController;
 use App\Http\Controllers\Pages\AuthPagesController;
 use App\Http\Controllers\Pages\DiagnosticPagesController;
 use App\Http\Controllers\Pages\PricingPagesController;
 use App\Http\Controllers\Pages\RecurringPagesController;
+use App\Http\Controllers\Pages\StrategyPagesController;
 use App\Http\Controllers\Pages\DemoPagesController;
 use App\Http\Controllers\Pages\PublicPagesController;
 
@@ -42,6 +44,8 @@ final class Routes
         $pricingPages = new PricingPagesController($app);
         $recurring = new RecurringApiController($app);
         $recurringPages = new RecurringPagesController($app);
+        $strategy = new StrategyApiController($app);
+        $strategyPages = new StrategyPagesController($app);
         $p = Route::ACCESS_PUBLIC;
 
         // Public
@@ -79,9 +83,8 @@ final class Routes
         $r->add('GET', '/app/recurrent/formules/nouvelle', $recurringPages->newOffer(...), 'app.read');
         $r->add('GET', '/app/recurrent/formules/{id}', $recurringPages->offer(...), 'app.read');
         $r->add('GET', '/app/recurrent/scenarios/{id}', $recurringPages->scenario(...), 'app.read');
-        foreach (['strategie'] as $module) {
-            $r->add('GET', '/app/' . $module, $pages->module(...), 'app.read');
-        }
+        $r->add('GET', '/app/strategie', $strategyPages->index(...), 'app.read');
+        $r->add('GET', '/app/strategie/plan', $strategyPages->plan(...), 'app.read');
 
         // API
         $r->add('GET', '/api/v1/organization', $organization->show(...), 'app.read');
@@ -132,6 +135,19 @@ final class Routes
         $r->add('POST', '/api/v1/recurring/scenarios/{id}/finalize', $recurring->finalize(...), 'recurring.write');
         $r->add('POST', '/api/v1/recurring/scenarios/{id}/new-version', $recurring->newVersion(...), 'recurring.write');
         $r->add('POST', '/api/v1/recurring/scenarios/{id}/archive', $recurring->archive(...), 'recurring.write');
+        $r->add('GET', '/api/v1/recommendations', $strategy->index(...), 'app.read');
+        $r->add('POST', '/api/v1/recommendations/evaluate', $strategy->evaluate(...), 'strategy.write');
+        $r->add('POST', '/api/v1/recommendations/{id}/accept', $strategy->accept(...), 'strategy.write');
+        $r->add('POST', '/api/v1/recommendations/{id}/dismiss', $strategy->dismiss(...), 'strategy.write');
+        $r->add('POST', '/api/v1/recommendations/{id}/snooze', $strategy->snooze(...), 'strategy.write');
+        $r->add('POST', '/api/v1/recommendations/{id}/reopen', $strategy->reopen(...), 'strategy.write');
+        $r->add('GET', '/api/v1/action-plan', $strategy->plan(...), 'app.read');
+        $r->add('POST', '/api/v1/action-items', $strategy->storeAction(...), 'strategy.write');
+        $r->add('PATCH', '/api/v1/action-items/{id}', $strategy->updateAction(...), 'strategy.write');
+        $r->add('DELETE', '/api/v1/action-items/{id}', $strategy->destroyAction(...), 'strategy.write');
+        $r->add('POST', '/api/v1/action-items/{id}/tasks', $strategy->storeTask(...), 'strategy.write');
+        $r->add('PATCH', '/api/v1/action-tasks/{id}', $strategy->updateTask(...), 'strategy.write');
+        $r->add('DELETE', '/api/v1/action-tasks/{id}', $strategy->destroyTask(...), 'strategy.write');
         $r->add('POST', '/api/v1/financial-profile/recurring-share/accept-computed', $recurring->acceptComputedShare(...), 'finance.write');
 
         return $r;

@@ -40,6 +40,14 @@ final class FinancialProfileRepository extends OrgScopedRepository
         parent::__construct($db);
     }
 
+    /** Date de dernière modification du profil (sert au critère « données anciennes »). */
+    public function updatedAt(OrgId $org): ?string
+    {
+        $row = $this->scopedOne($org, 'SELECT updated_at FROM financial_profiles WHERE organization_id = :org');
+
+        return $row === null ? null : TypedArray::nullableString($row, 'updated_at');
+    }
+
     public function find(OrgId $org): ?FinancialProfileData
     {
         $row = $this->scopedOne($org, 'SELECT * FROM financial_profiles WHERE organization_id = :org');

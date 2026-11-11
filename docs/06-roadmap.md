@@ -55,8 +55,8 @@
 | Phase 4, lot 1 | Démo (création, quotas, expiration, purge), authentification complète (comptes de test), layout, vue d'ensemble, profil et onboarding | code et tests (§6) | ✅ validé |
 | Phase 4, lot 2 | Diagnostic (questionnaire v1, scoring, résultats partiels) | code et tests (§7) | ✅ validé |
 | Phase 4, lot 3 | Pricing (simulateur, aperçus, finalisation, versions) | code et tests (§8) | ✅ validé |
-| **Phase 4, lot 4** | Revenus récurrents (offres, contrats, scénarios, projections) | code et tests (§9) | ⏳ livré, à valider |
-| Phase 4, lot 5 | Stratégie (moteur de règles, sources des recommandations, plan d'action) | — | — |
+| Phase 4, lot 4 | Revenus récurrents (offres, contrats, scénarios, projections) | code et tests (§9) | ✅ validé |
+| **Phase 4, lot 5** | Stratégie (moteur de règles, sources des recommandations, plan d'action) | code et tests (§10) | ⏳ livré, à valider |
 | Phase 4, lot 6 | Dashboard complet, historique, méthodologie, RGPD (export et suppression, utiles aux comptes de test), pages légales du portfolio | — | — |
 | Phase 5 | Tests de sécurité (locaux) ; déploiement **portfolio** sur Hostinger, avec ton accord pour chaque action ; checklist de mise en ligne du portfolio | runbooks et checklist | — |
 | **Plus tard** | **SaaS commercial** : choix de l'infrastructure isolée, A3, A5, A6, A7, A8 et A9, revue de sécurité complète, checklist « données réelles », documents RGPD définitifs, éventuellement facturation | — | ⏸ |
@@ -151,4 +151,22 @@ Une prestation supprimée laisse ses simulations figées lisibles (le contexte f
 **Correction de la documentation.** Le tableau du cas REC-4 (03 §5) indiquait 19,47 clients au mois 6 ; la valeur exacte est 19,4649…, soit **19,46** (le MRR de 2 919,74 € était déjà juste). Le document est corrigé.
 
 **Total : 192 tests, 2 211 assertions**, PHPStan niveau max sans erreur, aucun motif interdit.
+
+## 10. Lot 5 : ce qui a été livré (11/11/2026)
+
+| Exigence | Mise en œuvre | Vérification |
+|---|---|---|
+| Moteur de règles | `RuleEngine` déterministe, sans accès à la base, sur des `Facts` qui ne contiennent que des données réelles ou **figées** (jamais de brouillon) : les 18 règles du catalogue (03 §7.2) ; priorité = base de sévérité + bonus de dimension **seulement si la dimension est calculable**, plafonnée à 100 ; seuils évalués sur les valeurs exactes (prix plancher et prix recommandé recalculés à partir des entrées figées) | cas RULE-1 (45, 6 164,71 €), RULE-2 (51), RULE-3 (résolue), RULE-4 (NO_PRICING seulement) ; sévérités, plafonds, dimension non calculable |
+| Traçabilité | Chaque recommandation garde ses sources (profil, simulation figée, prix catalogue, contrats, diagnostic), les valeurs exactes et les seuils ; ligne « Repose sur », « Voir le détail du calcul » | tests ; navigateur |
+| Qualité des données | `partial` (volume absent : impact non chiffré ; diagnostic partiel), `stale` (période > 15 mois, profil > 12 mois, diagnostic > 12 mois, simulation > 12 mois ou en dérive > 5 %, contrats > 6 mois), mention « Démo » ; **une donnée partielle ou ancienne n'augmente jamais la priorité** ; aucune recommandation sur une donnée absente | tests unitaires |
+| Réconciliation | Création, mise à jour (statut conservé), réapparition (« réapparue ») d'une recommandation résolue, retour d'une recommandation ignorée **seulement si sa sévérité augmente**, report échu → nouvelle, résolution automatique quand la condition disparaît ; évaluation **automatique après chaque enregistrement qui change les faits** (profil, catalogue, simulation finalisée ou archivée, formules et contrats, diagnostic terminé), jamais après l'enregistrement d'un brouillon ; bouton « Réévaluer » | parcours complet RULE-1 → RULE-3 → réapparition |
+| Confidentialité | Preuves et impact chiffré **chiffrés (D4)** ; titre et explication produits à l'affichage depuis les preuves déchiffrées : aucun montant en clair en base | test (format `k1.gcm:`, aucune valeur en clair) |
+| Plan d'action | Accepter crée une action avec ses sous-actions (2 à 5) ; statuts à faire / en cours / terminé, échéances, retards, sous-actions cochables, actions libres ; action terminée → recommandation terminée ; recommandation résolue automatiquement → « Objectif atteint » sur l'action | tests |
+| Isolation | Dépôt restreint à l'organisation, clés étrangères composites ; 404 identique à « inexistant » et journalisation (recommandations, actions, sous-actions) | test d'isolation |
+| Interface | Recommandations par onglet (nouvelles, acceptées, reportées, ignorées, résolues) et par module ; plan d'action ; carte « Priorités » de la vue d'ensemble (3 premières recommandations et progression du plan) ; le module « à venir » est retiré | parcours navigateur desktop et mobile, sans erreur ni défilement horizontal |
+| Démo | Lumen : recommandations calculées sur les données fictives (prix sous-tarifé, formule déficitaire, objectif ambitieux, dimension Stratégie…), une recommandation acceptée en cours avec une sous-action faite, une action libre | test dédié |
+
+**Écart assumé avec 02 §5.6.** Les colonnes `title`, `explanation` et `impact_text` ne sont pas stockées : ces textes contiennent des montants. Ils sont produits à l'affichage par `RuleCatalog` à partir des preuves chiffrées, ce qui respecte D4 sans perdre d'information.
+
+**Total : 205 tests, 2 421 assertions**, PHPStan niveau max sans erreur, aucun motif interdit.
 

@@ -1,5 +1,5 @@
 /*
- * Agency OS — scripts de l'application (lots 1 à 4).
+ * Agency OS — scripts de l'application (lots 1 à 5).
  * Règles (docs/04-securite.md §5) : aucun innerHTML ni eval, aucune formule métier (le serveur calcule),
  * aucune donnée financière dans le stockage du navigateur. Compatible CSP stricte et Trusted Types.
  */
@@ -808,6 +808,63 @@ if (scenarioEl) {
     act(base, 'DELETE', () => window.location.assign('/app/recurrent'));
   });
 }
+
+/* ---------- Stratégie : recommandations ---------- */
+const recoAction = async (url, body, message) => {
+  const result = await api('POST', url, body);
+  if (result.ok) {
+    if (message) toast(message);
+    setTimeout(() => window.location.reload(), message ? 500 : 0);
+  } else {
+    toast(result.error?.fields ? Object.values(result.error.fields)[0] : (result.error?.message ?? 'Erreur.'));
+  }
+};
+document.querySelector('[data-reco-evaluate]')?.addEventListener('click', () => recoAction('/api/v1/recommendations/evaluate', {}, 'Recommandations réévaluées.'));
+document.querySelectorAll('[data-reco]').forEach((card) => {
+  const base = `/api/v1/recommendations/${encodeURIComponent(card.dataset.reco)}`;
+  card.querySelector('[data-reco-accept]')?.addEventListener('click', () => recoAction(`${base}/accept`, {}, 'Ajoutée au plan d’action.'));
+  card.querySelector('[data-reco-dismiss]')?.addEventListener('click', () => recoAction(`${base}/dismiss`, {}, 'Recommandation ignorée.'));
+  card.querySelector('[data-reco-reopen]')?.addEventListener('click', () => recoAction(`${base}/reopen`, {}, null));
+  card.querySelector('[data-reco-snooze]')?.addEventListener('click', () => recoAction(`${base}/snooze`, { days: card.querySelector('[data-reco-snooze-days]').value }, 'Recommandation reportée.'));
+});
+
+/* ---------- Stratégie : plan d'action ---------- */
+document.querySelector('[data-action-create]')?.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const result = await api('POST', '/api/v1/action-items', serialise(form));
+  if (result.ok) window.location.reload(); else showErrors(form, result.error);
+});
+document.querySelectorAll('[data-action]').forEach((item) => {
+  const url = `/api/v1/action-items/${encodeURIComponent(item.dataset.action)}`;
+  const patch = async (body) => {
+    const result = await api('PATCH', url, body);
+    if (result.ok) window.location.reload(); else toast(result.error?.fields ? 'Valeur invalide.' : (result.error?.message ?? 'Erreur.'));
+  };
+  item.querySelector('[data-action-status]')?.addEventListener('change', (event) => patch({ status: event.target.value }));
+  item.querySelector('[data-action-due]')?.addEventListener('change', (event) => patch({ due_date: event.target.value || null }));
+  item.querySelector('[data-action-delete]')?.addEventListener('click', async () => {
+    if (!(await confirmAction('Supprimer cette action ?', 'Ses sous-actions seront supprimées. Une recommandation liée revient dans les nouvelles.', 'Supprimer l’action'))) return;
+    const result = await api('DELETE', url);
+    if (result.ok) window.location.reload(); else toast(result.error?.message ?? 'Erreur.');
+  });
+  item.querySelector('[data-task-add]')?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const label = event.currentTarget.querySelector('[name="label"]').value.trim();
+    if (label === '') return;
+    const result = await api('POST', `${url}/tasks`, { label });
+    if (result.ok) window.location.reload(); else toast('Sous-action invalide.');
+  });
+  item.querySelectorAll('[data-task]').forEach((box) => {
+    box.addEventListener('change', async () => {
+      const result = await api('PATCH', `/api/v1/action-tasks/${encodeURIComponent(box.dataset.task)}`, { is_done: box.checked });
+      if (!result.ok) {
+        box.checked = !box.checked;
+        toast(result.error?.message ?? 'Erreur.');
+      }
+    });
+  });
+});
 
 /* ---------- Largeurs proportionnelles (barres empilées) via CSSOM ---------- */
 document.querySelectorAll('[data-width]').forEach((el) => el.style.setProperty('width', `${Number(el.dataset.width)}%`));
