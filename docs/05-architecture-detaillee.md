@@ -237,7 +237,7 @@ Réponse :
 | `financial_profiles` | montants sensibles en `*_enc` **[D4]** ; + `updated_by` |
 | `financial_profile_changes` | `old_value_enc`, `new_value_enc` **[D4]** |
 | `services` | + `public_id` |
-| `pricing_simulations` | + `public_id`, `status` (draft, finalized, superseded, archived), `superseded_by`, `archived_at` ; index UNIQUE **fonctionnel** pour garantir **au plus une simulation `finalized` par prestation**. MySQL ne propose pas d'index partiel : on utilise une colonne générée `active_service_key = IF(status='finalized', service_id, NULL)` avec UNIQUE (organization_id, active_service_key). C'est compatible MySQL 8 et MariaDB 10.x, **à vérifier sur la version installée** |
+| `pricing_simulations` | + `public_id`, `status` (draft, finalized, superseded, archived), `superseded_by`, `archived_at` ; index UNIQUE **fonctionnel** pour garantir **au plus une simulation `finalized` par prestation**. MySQL ne propose pas d'index partiel : on utilise une colonne générée `is_active_key = IF(status='finalized', 1, NULL)` avec UNIQUE (service_id, is_active_key). La colonne générée ne dérive **que de `status`** : MySQL 8 interdit `ON DELETE CASCADE` sur une colonne de base d'une colonne générée stockée (constaté au lot 2 avec `diagnostics.draft_key`). Compatible MySQL 8 et MariaDB 10.x, vérifié en CI sur les deux |
 | `pricing_scenarios`, `pricing_scenario_lines` | clé étrangère composite avec l'organisation |
 | `recurring_offers` | + `public_id` ; `active_contracts` et `contracts_updated_at` (sert au critère « ancien ») |
 | `recurring_scenarios` | + `public_id`, cycle de vie (§3.2), `frozen_context`, `frozen_results` |

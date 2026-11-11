@@ -72,6 +72,8 @@ final class DiagnosticFlowTest extends DatabaseTestCase
         self::assertSame(200, $again->status, 'Un seul brouillon : reprise.');
         self::assertSame($id, self::data($again)['public_id']);
         self::assertSame(1, $this->countRows('diagnostics'));
+        $org = new OrgId((int) $_SESSION['organization_id']);
+        self::assertNull($this->app->diagnosticRepository()->createDraft($org, null, 'v1', '1.0'), 'Second brouillon refusé par la base.');
 
         // Réponse invalide, question inconnue → 422 ; clôture incomplète refusée.
         self::assertSame(422, $this->send('PUT', "/api/v1/diagnostics/{$id}/answers", ['question' => 'pos.target', 'option' => 'n4'])->status);

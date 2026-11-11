@@ -13,12 +13,13 @@ CREATE TABLE diagnostics (
     completed_at DATETIME NULL,
     created_at DATETIME NOT NULL,
     updated_at DATETIME NOT NULL,
-    -- Au plus un brouillon par organisation : colonne générée, NULL dès que le diagnostic est terminé.
-    draft_key BIGINT UNSIGNED GENERATED ALWAYS AS (IF(status = 'draft', organization_id, NULL)) STORED,
+    -- Au plus un brouillon par organisation : colonne générée (1 pour un brouillon, NULL sinon) unique avec organization_id.
+    -- Elle ne dérive que de status : MySQL 8 interdit ON DELETE CASCADE sur une colonne de base d'une colonne générée stockée.
+    draft_key TINYINT UNSIGNED GENERATED ALWAYS AS (IF(status = 'draft', 1, NULL)) STORED,
     PRIMARY KEY (id),
     UNIQUE KEY uq_diagnostics_public_id (public_id),
     UNIQUE KEY uq_diagnostics_id_org (id, organization_id),
-    UNIQUE KEY uq_diagnostics_one_draft (draft_key),
+    UNIQUE KEY uq_diagnostics_one_draft (organization_id, draft_key),
     KEY idx_diagnostics_org (organization_id, status, completed_at),
     CONSTRAINT fk_diagnostics_org FOREIGN KEY (organization_id) REFERENCES organizations (id) ON DELETE CASCADE,
     CONSTRAINT fk_diagnostics_user FOREIGN KEY (started_by) REFERENCES users (id) ON DELETE SET NULL

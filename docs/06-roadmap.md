@@ -111,7 +111,9 @@
 | Interface | Accueil (Commencer / Reprendre x/6, dernier résultat, historique) ; questionnaire par dimension avec sauvegarde automatique séquentielle, questions conditionnelles affichées ou masquées selon les règles du serveur, explication de la politique « Je ne sais pas » sous chaque question ; résultats figés (anneau de score ou « Diagnostic partiel », radar Chart.js local avec axes non calculables grisés et jamais placés à 0, forces et axes, détail par dimension, comparaison avec le diagnostic précédent si même version) ; carte « Maturité business » sur la vue d'ensemble | parcours navigateur desktop et mobile : aucun défilement horizontal, aucune violation CSP ni Trusted Types |
 | Démo | Lumen dispose d'un diagnostic terminé cohérent avec DIAG-1 (score 58 affiché dès l'arrivée) ; la réinitialisation le recrée | test dédié |
 
+**Compatibilité MySQL 8.** La CI a détecté que MySQL 8 (contrairement à MariaDB) refuse une clé étrangère `ON DELETE CASCADE` sur une colonne de base d'une colonne générée stockée : la colonne `draft_key` ne dérive plus que de `status`, avec un index unique (`organization_id`, `draft_key`). La même règle est reportée dans 05 pour les simulations du lot 3.
+
 **Constat à signaler.** Avec le questionnaire v1 tel que validé, une seule question par dimension au plus a la politique « inconnue » : une clôture (qui exige une réponse à chaque question applicable) ne peut donc **jamais** produire de dimension non calculable. Le statut « Diagnostic partiel » est entièrement implémenté et testé (écrit directement en base dans le test), mais il ne pourra apparaître qu'avec une future version du questionnaire comportant davantage de questions « inconnues ».
 
-**Total : 168 tests, 1 748 assertions**, PHPStan niveau max sans erreur, aucun motif interdit.
+**Total : 168 tests, 1 749 assertions**, PHPStan niveau max sans erreur, aucun motif interdit.
 
