@@ -82,3 +82,9 @@ politiques se cumulent (la plus stricte s'applique), sans effet sur l'applicatio
    `config/.env` via le gestionnaire de fichiers de hPanel ; les pages légales affichent « à compléter » d'ici là.
 2. Télécharger et conserver **hors ligne** `config/keys/data.k1` et `config/keys/keyring.json`.
 3. Confirmer la durée de conservation des sauvegardes Hostinger (citée dans la politique de confidentialité).
+
+## 7. Journal des mises à jour
+
+| Date | Contenu | Fichiers | Migration |
+|---|---|---|---|
+| 12/11/2026 | Glossaire (`/glossaire`, `/app/glossaire`), bulles d'info pédagogiques, débordements mobiles corrigés | 23 fichiers (`app/`, `public_html/assets/`), contenu en ligne vérifié identique à `d0519a8` avant envoi | aucune |
